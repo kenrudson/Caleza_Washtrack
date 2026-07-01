@@ -1,0 +1,26 @@
+# Java / Spring Boot
+backend/target/
+backend/.mvn/
+backend/HELP.md
+*.class
+
+# Node / React (web)
+web/node_modules/
+web/dist/
+web/.env
+
+# Android / Kotlin (mobile)
+mobile/.gradle/
+mobile/build/
+mobile/*/build/
+mobile/local.properties
+mobile/.idea/
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Env / secrets
+.env
+application-local.properties
