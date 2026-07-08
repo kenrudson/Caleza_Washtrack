@@ -1,11 +1,11 @@
-package edu.cit.caleza.washtrack.dto;
+package edu.cit.caleza.washtrack.features.login;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class AuthResponse {
+public class LoginResponse {
     private String token;
     private Long userId;
     private String fullName;
