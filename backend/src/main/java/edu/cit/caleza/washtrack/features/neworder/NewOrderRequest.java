@@ -1,4 +1,4 @@
-package edu.cit.caleza.washtrack.dto;
+package edu.cit.caleza.washtrack.features.neworder;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -10,7 +10,6 @@ public class NewOrderRequest {
     @NotNull(message = "User is required")
     private Long userId;
 
-    // Pickup details (FR-004)
     @NotBlank(message = "Pickup address is required")
     private String pickupAddress;
 
@@ -22,13 +21,12 @@ public class NewOrderRequest {
 
     private String pickupNotes;
 
-    // Order details (FR-005)
     @NotBlank(message = "Service type is required")
-    private String serviceType; // "WASH_FOLD" | "DRY_CLEAN" | "FOLD_ONLY"
+    private String serviceType;
 
     @NotNull(message = "Weight is required")
-    @DecimalMin(value = "0.01", message = "Weight must be greater than 0 kg") // BR-008
-    @DecimalMax(value = "50.0", message = "Weight cannot exceed 50 kg")        // BR-008
+    @DecimalMin(value = "0.01", message = "Weight must be greater than 0 kg")
+    @DecimalMax(value = "50.0", message = "Weight cannot exceed 50 kg")
     private Double weightKg;
 
     private String specialInstructions;
