@@ -1,4 +1,4 @@
-import axiosClient from "../infrastructure/api/axiosClient";
+import axiosClient from "../../infrastructure/api/axiosClient";
 
 export async function fetchCustomerOrders(userId) {
   const response = await axiosClient.get(`/orders/my/${userId}`);
