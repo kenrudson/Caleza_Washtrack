@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axiosClient from "../api/axiosClient";
+import { loginUser } from "./authService";
+import { authRoutes } from "./routes";
+import { dashboardRoutes } from "../dashboard/routes";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -16,10 +18,10 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const res = await axiosClient.post("/auth/login", form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/dashboard");
+      const data = await loginUser(form);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
+      navigate(dashboardRoutes.dashboard);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
@@ -40,7 +42,7 @@ export default function Login() {
           {loading ? "Logging in..." : "Log In"}
         </button>
       </form>
-      <p>Don't have an account? <Link to="/register">Register</Link></p>
+      <p>Don&apos;t have an account? <Link to={authRoutes.register}>Register</Link></p>
     </div>
   );
 }

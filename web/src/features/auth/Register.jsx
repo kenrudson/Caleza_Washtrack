@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import axiosClient from "../api/axiosClient";
+import { registerUser } from "./authService";
+import { authRoutes } from "./routes";
+import { dashboardRoutes } from "../dashboard/routes";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -25,10 +27,10 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const res = await axiosClient.post("/auth/register", form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/dashboard");
+      const data = await registerUser(form);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
+      navigate(dashboardRoutes.dashboard);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {
@@ -53,7 +55,7 @@ export default function Register() {
           {loading ? "Creating account..." : "Register"}
         </button>
       </form>
-      <p>Already have an account? <Link to="/login">Log in</Link></p>
+      <p>Already have an account? <Link to={authRoutes.login}>Log in</Link></p>
     </div>
   );
 }
