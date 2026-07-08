@@ -1,4 +1,4 @@
-package edu.cit.caleza.washtrack.dto;
+package edu.cit.caleza.washtrack.features.registration;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
