@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.example.myapplication.features.dashboard.DashboardScreen
 import com.example.myapplication.features.login.LoginScreen
 import com.example.myapplication.features.registration.RegisterScreen
-import com.example.myapplication.ui.screens.DashboardScreen
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.utils.SessionManager
 
