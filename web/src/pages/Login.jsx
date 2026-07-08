@@ -1,8 +1,7 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import axiosClient from "../api/axiosClient";
+import LoginPage from "../features/auth/login/LoginPage";
 
-export default function Login() {
+export default LoginPage;
+
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
