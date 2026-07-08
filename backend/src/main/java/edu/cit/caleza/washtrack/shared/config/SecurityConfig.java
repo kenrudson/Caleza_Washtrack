@@ -1,4 +1,4 @@
-package edu.cit.caleza.washtrack.config;
+package edu.cit.caleza.washtrack.shared.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,3 +29,4 @@ public class SecurityConfig {
         return http.build();
     }
 }
+// $env:SUPABASE_DB_PASSWORD="your-actual-password"//

@@ -1,6 +1,6 @@
-package edu.cit.caleza.washtrack.repository;
+package edu.cit.caleza.washtrack.shared.repository;
 
-import edu.cit.caleza.washtrack.entity.User;
+import edu.cit.caleza.washtrack.shared.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

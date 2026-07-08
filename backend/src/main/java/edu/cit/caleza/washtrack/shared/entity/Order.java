@@ -1,4 +1,4 @@
-package edu.cit.caleza.washtrack.entity;
+package edu.cit.caleza.washtrack.shared.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

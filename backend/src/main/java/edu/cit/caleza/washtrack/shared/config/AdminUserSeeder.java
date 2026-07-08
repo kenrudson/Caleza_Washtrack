@@ -1,7 +1,7 @@
-package edu.cit.caleza.washtrack.config;
+package edu.cit.caleza.washtrack.shared.config;
 
-import edu.cit.caleza.washtrack.entity.User;
-import edu.cit.caleza.washtrack.repository.UserRepository;
+import edu.cit.caleza.washtrack.shared.entity.User;
+import edu.cit.caleza.washtrack.shared.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
