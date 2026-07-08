@@ -1,16 +1,15 @@
-import RegisterPage from "../features/auth/register/RegisterPage";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { registerUser } from "./registerService";
 
-export default RegisterPage;
+export default function RegisterPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    fullName: "", email: "", phone: "", address: "", password: "",
-  });
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", address: "", password: "" });
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,9 +22,9 @@ export default RegisterPage;
 
     setLoading(true);
     try {
-      const res = await axiosClient.post("/auth/register", form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data));
+      const data = await registerUser(form);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
