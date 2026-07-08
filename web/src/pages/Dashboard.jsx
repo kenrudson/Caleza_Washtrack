@@ -1,16 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosClient from "../api/axiosClient";
 import "../App.css";
 
-// ─── Mock Data ────────────────────────────────────────────────
-const MOCK_CUSTOMER_ORDERS = [
-  { id: "ORD-1042", service: "Wash & Fold", weight: 5.2, price: 260, status: "Processing", date: "2026-07-04", paid: false },
-  { id: "ORD-1038", service: "Dry Clean", weight: 2.1, price: 315, status: "Ready", date: "2026-07-03", paid: false },
-  { id: "ORD-1035", service: "Wash & Fold", weight: 3.8, price: 190, status: "Delivered", date: "2026-07-01", paid: true },
-  { id: "ORD-1029", service: "Fold Only", weight: 4.0, price: 160, status: "Delivered", date: "2026-06-28", paid: true },
-  { id: "ORD-1021", service: "Dry Clean", weight: 1.5, price: 225, status: "Delivered", date: "2026-06-25", paid: true },
-];
+// ─── Bell Icon (matches the outlined style used on mobile) ─────
+function BellIcon({ size = 18 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
 
+// ─── Mock Data (Staff dashboard + notifications remain mock for now) ──
 const MOCK_STAFF_ORDERS = [
   { id: "ORD-1042", customer: "Maria Santos", service: "Wash & Fold", weight: 5.2, price: 260, status: "Processing", date: "2026-07-04", paid: false },
   { id: "ORD-1041", customer: "Juan Dela Cruz", service: "Dry Clean", weight: 3.0, price: 450, status: "Pending", date: "2026-07-04", paid: false },
@@ -27,7 +39,7 @@ const MOCK_NOTIFICATIONS = [
   { id: 4, text: "Payment received for ORD-1035. Thank you!", time: "2 days ago", read: true },
 ];
 
-const STATUS_STEPS = ["Pending", "Picked Up", "Processing", "Ready", "Delivered"];
+const STATUS_STEPS = ["Pending", "Delivered", "Processing", "Ready", "Picked Up"];
 
 const SERVICE_ICONS = {
   "Wash & Fold": "🧺",
@@ -77,6 +89,35 @@ export default function Dashboard() {
 
   // Staff state for managing orders
   const [staffOrders, setStaffOrders] = useState(MOCK_STAFF_ORDERS);
+
+  // Customer order state — real data from the backend (FR-004, FR-005, FR-011)
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [ordersFetchError, setOrdersFetchError] = useState("");
+  const [showNewOrderModal, setShowNewOrderModal] = useState(false);
+
+  const fetchCustomerOrders = () => {
+    if (!user.userId) return;
+    setLoadingOrders(true);
+    axiosClient
+      .get(`/orders/my/${user.userId}`)
+      .then((res) => {
+        setCustomerOrders(res.data.map(toDisplayOrder));
+        setOrdersFetchError("");
+      })
+      .catch(() => setOrdersFetchError("Could not load your orders right now."))
+      .finally(() => setLoadingOrders(false));
+  };
+
+  useEffect(() => {
+    if (!isStaff) fetchCustomerOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.userId, isStaff]);
+
+  const handleOrderCreated = (newOrderResponse) => {
+    setCustomerOrders((prev) => [toDisplayOrder(newOrderResponse), ...prev]);
+    setShowNewOrderModal(false);
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -140,7 +181,7 @@ export default function Dashboard() {
                 <span className="nav-icon">📋</span>
                 My Orders
                 <span className="nav-badge">
-                  {MOCK_CUSTOMER_ORDERS.filter((o) => o.status !== "Delivered").length}
+                  {customerOrders.filter((o) => o.status !== "Delivered").length}
                 </span>
               </button>
               <button
@@ -185,7 +226,7 @@ export default function Dashboard() {
             className={`nav-item ${activeNav === "notifications" ? "active" : ""}`}
             onClick={() => { setActiveNav("notifications"); setSidebarOpen(false); }}
           >
-            <span className="nav-icon">🔔</span>
+            <span className="nav-icon"><BellIcon size={18} /></span>
             Notifications
             {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}
           </button>
@@ -239,7 +280,7 @@ export default function Dashboard() {
                 onClick={() => setShowNotifications(!showNotifications)}
                 title="Notifications"
               >
-                🔔
+                <BellIcon size={20} />
                 {unreadCount > 0 && <span className="notif-count">{unreadCount}</span>}
               </button>
 
@@ -282,7 +323,16 @@ export default function Dashboard() {
               onRecordPayment={handleRecordPayment}
             />
           ) : (
-            <CustomerDashboard user={user} />
+            <CustomerDashboard
+              user={user}
+              orders={customerOrders}
+              loadingOrders={loadingOrders}
+              fetchError={ordersFetchError}
+              showNewOrderModal={showNewOrderModal}
+              onOpenNewOrder={() => setShowNewOrderModal(true)}
+              onCloseNewOrder={() => setShowNewOrderModal(false)}
+              onOrderCreated={handleOrderCreated}
+            />
           )}
         </div>
       </main>
@@ -291,15 +341,231 @@ export default function Dashboard() {
 }
 
 // ─── Customer Dashboard ─────────────────────────────────────
-function CustomerDashboard({ user }) {
-  const activeOrders = MOCK_CUSTOMER_ORDERS.filter((o) => o.status !== "Delivered");
+// ─── Backend <-> Display mapping ─────────────────────────────
+const SERVICE_TYPE_LABELS = {
+  WASH_FOLD: "Wash & Fold",
+  DRY_CLEAN: "Dry Clean",
+  FOLD_ONLY: "Fold Only",
+};
+
+const STATUS_LABELS = {
+  PENDING: "Pending",
+  PICKED_UP: "Picked Up",
+  PROCESSING: "Processing",
+  READY: "Ready",
+  DELIVERED: "Delivered",
+};
+
+// Converts a backend OrderResponse into the shape the existing UI expects
+function toDisplayOrder(o) {
+  return {
+    id: `ORD-${1000 + o.orderId}`,
+    service: SERVICE_TYPE_LABELS[o.serviceType] || o.serviceType,
+    weight: o.weightKg,
+    price: o.totalPrice,
+    status: STATUS_LABELS[o.status] || o.status,
+    date: (o.createdAt || "").split("T")[0],
+    paid: o.paid,
+  };
+}
+
+// Minimum selectable pickup date: tomorrow, per BR-002 (same-day not permitted)
+function getMinPickupDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split("T")[0];
+}
+
+const TIME_SLOTS = [
+  "8:00 AM - 11:00 AM",
+  "11:00 AM - 2:00 PM",
+  "2:00 PM - 5:00 PM",
+  "5:00 PM - 8:00 PM",
+];
+
+// ─── New Order Modal (FR-004 + FR-005) ───────────────────────
+function NewOrderModal({ userId, onClose, onCreated }) {
+  const [form, setForm] = useState({
+    pickupAddress: "",
+    scheduledDate: "",
+    timeSlot: TIME_SLOTS[0],
+    pickupNotes: "",
+    serviceType: "WASH_FOLD",
+    weightKg: "",
+    specialInstructions: "",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!form.pickupAddress || !form.scheduledDate || !form.weightKg) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    const weight = parseFloat(form.weightKg);
+    if (isNaN(weight) || weight <= 0 || weight > 50) {
+      setError("Weight must be greater than 0 kg and at most 50 kg."); // BR-008
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await axiosClient.post("/orders/new", {
+        userId,
+        pickupAddress: form.pickupAddress,
+        scheduledDate: form.scheduledDate,
+        timeSlot: form.timeSlot,
+        pickupNotes: form.pickupNotes,
+        serviceType: form.serviceType,
+        weightKg: weight,
+        specialInstructions: form.specialInstructions,
+      });
+      onCreated(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not create order. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>New Order</h3>
+          <button className="modal-close-btn" onClick={onClose}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="modal-body">
+          <p className="modal-section-label">Pickup Details</p>
+
+          <label className="modal-field">
+            <span>Pickup Address *</span>
+            <input
+              name="pickupAddress"
+              value={form.pickupAddress}
+              onChange={handleChange}
+              placeholder="Where should we pick up your laundry?"
+              required
+            />
+          </label>
+
+          <div className="modal-field-row">
+            <label className="modal-field">
+              <span>Pickup Date *</span>
+              <input
+                type="date"
+                name="scheduledDate"
+                value={form.scheduledDate}
+                onChange={handleChange}
+                min={getMinPickupDate()}
+                required
+              />
+            </label>
+            <label className="modal-field">
+              <span>Time Slot *</span>
+              <select name="timeSlot" value={form.timeSlot} onChange={handleChange}>
+                {TIME_SLOTS.map((slot) => (
+                  <option key={slot} value={slot}>{slot}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label className="modal-field">
+            <span>Pickup Notes (optional)</span>
+            <input
+              name="pickupNotes"
+              value={form.pickupNotes}
+              onChange={handleChange}
+              placeholder="Gate code, landmark, etc."
+            />
+          </label>
+
+          <p className="modal-section-label">Order Details</p>
+
+          <div className="modal-field-row">
+            <label className="modal-field">
+              <span>Service Type *</span>
+              <select name="serviceType" value={form.serviceType} onChange={handleChange}>
+                <option value="WASH_FOLD">Wash & Fold</option>
+                <option value="DRY_CLEAN">Dry Clean</option>
+                <option value="FOLD_ONLY">Fold Only</option>
+              </select>
+            </label>
+            <label className="modal-field">
+              <span>Estimated Weight (kg) *</span>
+              <input
+                type="number"
+                name="weightKg"
+                value={form.weightKg}
+                onChange={handleChange}
+                min="0.1"
+                max="50"
+                step="0.1"
+                placeholder="e.g. 5.0"
+                required
+              />
+            </label>
+          </div>
+
+          <label className="modal-field">
+            <span>Special Instructions (optional)</span>
+            <textarea
+              name="specialInstructions"
+              value={form.specialInstructions}
+              onChange={handleChange}
+              placeholder="Any special handling instructions?"
+              rows={3}
+            />
+          </label>
+
+          {error && <p className="modal-error">{error}</p>}
+
+          <div className="modal-actions">
+            <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn-primary" disabled={loading}>
+              {loading ? "Placing order..." : "Place Order"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function CustomerDashboard({
+  user,
+  orders,
+  loadingOrders,
+  fetchError,
+  showNewOrderModal,
+  onOpenNewOrder,
+  onCloseNewOrder,
+  onOrderCreated,
+}) {
+  const activeOrders = orders.filter((o) => o.status !== "Delivered");
   const latestOrder = activeOrders[0];
-  const totalOrders = MOCK_CUSTOMER_ORDERS.length;
-  const deliveredCount = MOCK_CUSTOMER_ORDERS.filter((o) => o.status === "Delivered").length;
-  const totalSpent = MOCK_CUSTOMER_ORDERS.filter((o) => o.paid).reduce((sum, o) => sum + o.price, 0);
+  const totalOrders = orders.length;
+  const deliveredCount = orders.filter((o) => o.status === "Delivered").length;
+  const totalSpent = orders.filter((o) => o.paid).reduce((sum, o) => sum + o.price, 0);
 
   return (
     <>
+      {showNewOrderModal && (
+        <NewOrderModal
+          userId={user.userId}
+          onClose={onCloseNewOrder}
+          onCreated={onOrderCreated}
+        />
+      )}
+
       {/* Welcome Banner */}
       <div className="welcome-banner animate-fade-in">
         <h1>Welcome back, {user.fullName?.split(" ")[0] || "there"}! 👋</h1>
@@ -405,12 +671,12 @@ function CustomerDashboard({ user }) {
           </div>
           <div className="section-body">
             <div className="quick-actions">
-              <button className="quick-action-btn">
+              <button className="quick-action-btn" onClick={onOpenNewOrder}>
                 <div className="action-icon" style={{ background: "var(--accent-subtle)", color: "var(--accent-primary)" }}>📅</div>
                 <span className="action-label">Schedule Pickup</span>
                 <span className="action-desc">Book a pickup date</span>
               </button>
-              <button className="quick-action-btn">
+              <button className="quick-action-btn" onClick={onOpenNewOrder}>
                 <div className="action-icon" style={{ background: "var(--status-ready-bg)", color: "var(--status-ready)" }}>➕</div>
                 <span className="action-label">New Order</span>
                 <span className="action-desc">Create laundry order</span>
@@ -453,26 +719,34 @@ function CustomerDashboard({ user }) {
               </tr>
             </thead>
             <tbody>
-              {MOCK_CUSTOMER_ORDERS.map((order) => (
-                <tr key={order.id}>
-                  <td><span className="order-id">{order.id}</span></td>
-                  <td>
-                    <span className="order-service">
-                      <span className="service-icon">{SERVICE_ICONS[order.service] || "🧺"}</span>
-                      {order.service}
-                    </span>
-                  </td>
-                  <td>{order.weight} kg</td>
-                  <td><span className="order-price">₱{order.price}</span></td>
-                  <td><span className={`status-badge ${STATUS_CLASS[order.status]}`}>{order.status}</span></td>
-                  <td>
-                    <span className={`payment-badge ${order.paid ? "paid" : "unpaid"}`}>
-                      {order.paid ? "✓ Paid" : "Unpaid"}
-                    </span>
-                  </td>
-                  <td style={{ color: "var(--text-secondary)", fontSize: "0.82rem" }}>{order.date}</td>
-                </tr>
-              ))}
+              {loadingOrders ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>Loading your orders...</td></tr>
+              ) : fetchError ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px", color: "var(--status-unpaid)" }}>{fetchError}</td></tr>
+              ) : orders.length === 0 ? (
+                <tr><td colSpan={7} style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>No orders yet. Click &ldquo;New Order&rdquo; to get started.</td></tr>
+              ) : (
+                orders.map((order) => (
+                  <tr key={order.id}>
+                    <td><span className="order-id">{order.id}</span></td>
+                    <td>
+                      <span className="order-service">
+                        <span className="service-icon">{SERVICE_ICONS[order.service] || "🧺"}</span>
+                        {order.service}
+                      </span>
+                    </td>
+                    <td>{order.weight} kg</td>
+                    <td><span className="order-price">₱{order.price}</span></td>
+                    <td><span className={`status-badge ${STATUS_CLASS[order.status]}`}>{order.status}</span></td>
+                    <td>
+                      <span className={`payment-badge ${order.paid ? "paid" : "unpaid"}`}>
+                        {order.paid ? "✓ Paid" : "Unpaid"}
+                      </span>
+                    </td>
+                    <td style={{ color: "var(--text-secondary)", fontSize: "0.82rem" }}>{order.date}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

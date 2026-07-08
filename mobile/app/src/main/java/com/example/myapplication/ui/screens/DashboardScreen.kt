@@ -52,7 +52,7 @@ data class MockNotification(
 )
 
 // ─── Constants ──────────────────────────────────────────────
-val STATUS_STEPS = listOf("Pending", "Picked Up", "Processing", "Ready", "Delivered")
+val STATUS_STEPS = listOf("Pending", "Delivered", "Processing", "Ready", "Picked Up")
 
 val STATUS_COLORS = mapOf(
     "Pending" to StatusPending,

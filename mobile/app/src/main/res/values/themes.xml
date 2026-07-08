@@ -3,5 +3,4 @@
 
     <style name="Theme.MyApplication" parent="android:Theme.Material.Light.NoActionBar" />
 
-    <style name="Theme.Mobile" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>
