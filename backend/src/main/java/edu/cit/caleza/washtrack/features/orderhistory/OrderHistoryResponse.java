@@ -1,4 +1,4 @@
-package edu.cit.caleza.washtrack.dto;
+package edu.cit.caleza.washtrack.features.orderhistory;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @AllArgsConstructor
-public class OrderResponse {
+public class OrderHistoryResponse {
     private Long orderId;
     private Long pickupId;
     private String pickupAddress;
