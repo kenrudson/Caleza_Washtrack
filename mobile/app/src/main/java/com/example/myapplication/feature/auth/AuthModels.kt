@@ -13,14 +13,6 @@ data class RegisterRequest(
     val password: String
 )
 
-data class AuthResponse(
-    val token: String,
-    val userId: Long,
-    val fullName: String,
-    val email: String,
-    val role: String
-)
-
 data class ErrorResponse(
     val message: String
 )
