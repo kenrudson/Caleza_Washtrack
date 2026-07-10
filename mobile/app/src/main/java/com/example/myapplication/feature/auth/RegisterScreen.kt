@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screens
+package com.example.myapplication.feature.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -31,9 +31,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.api.ErrorResponse
-import com.example.myapplication.api.NetworkClient
-import com.example.myapplication.api.RegisterRequest
+import com.example.myapplication.feature.auth.AuthRepository
+import com.example.myapplication.feature.auth.ErrorResponse
+import com.example.myapplication.feature.auth.RegisterRequest
 import com.example.myapplication.utils.SessionManager
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -53,10 +53,8 @@ fun RegisterScreen(
     var address by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-
     var error by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(false) }
 
@@ -64,7 +62,6 @@ fun RegisterScreen(
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
-    // Match the dark theme colors
     val darkBackground = Color(0xFF242424)
     val cardBackground = Color(0xFF1A1A1A)
     val accentColor = Color(0xFF646CFF)
@@ -103,7 +100,6 @@ fun RegisterScreen(
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
 
-                // Full Name Input
                 OutlinedTextField(
                     value = fullName,
                     onValueChange = { fullName = it; error = "" },
@@ -131,7 +127,6 @@ fun RegisterScreen(
                         .padding(bottom = 12.dp)
                 )
 
-                // Email Input
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it; error = "" },
@@ -159,7 +154,6 @@ fun RegisterScreen(
                         .padding(bottom = 12.dp)
                 )
 
-                // Phone Input
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it; error = "" },
@@ -187,7 +181,6 @@ fun RegisterScreen(
                         .padding(bottom = 12.dp)
                 )
 
-                // Address Input
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it; error = "" },
@@ -215,7 +208,6 @@ fun RegisterScreen(
                         .padding(bottom = 12.dp)
                 )
 
-                // Password Input
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; error = "" },
@@ -253,7 +245,6 @@ fun RegisterScreen(
                         .padding(bottom = 12.dp)
                 )
 
-                // Confirm Password Input
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it; error = "" },
@@ -291,7 +282,6 @@ fun RegisterScreen(
                         .padding(bottom = 16.dp)
                 )
 
-                // Error Message Display
                 if (error.isNotEmpty()) {
                     Text(
                         text = error,
@@ -304,7 +294,6 @@ fun RegisterScreen(
                     )
                 }
 
-                // Register Button
                 Button(
                     onClick = {
                         if (fullName.isBlank() || email.isBlank() || phone.isBlank() || address.isBlank() || password.isBlank()) {
@@ -334,7 +323,7 @@ fun RegisterScreen(
                                     password = password
                                 )
                                 val response = withContext(Dispatchers.IO) {
-                                    NetworkClient.apiService.register(request)
+                                    AuthRepository.register(request)
                                 }
                                 if (response.isSuccessful && response.body() != null) {
                                     val authRes = response.body()!!
@@ -385,7 +374,6 @@ fun RegisterScreen(
                     }
                 }
 
-                // Redirect Link
                 TextButton(onClick = onNavigateToLogin) {
                     Text(
                         text = "Already have an account? Log in",

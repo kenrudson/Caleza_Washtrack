@@ -1,4 +1,4 @@
-package com.example.myapplication.api
+package com.example.myapplication.feature.auth
 
 import retrofit2.Response
 import retrofit2.http.Body

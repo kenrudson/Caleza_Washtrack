@@ -1,4 +1,4 @@
-package com.example.myapplication.api
+package com.example.myapplication.feature.auth
 
 data class LoginRequest(
     val email: String,
@@ -11,14 +11,6 @@ data class RegisterRequest(
     val phone: String,
     val address: String,
     val password: String
-)
-
-data class AuthResponse(
-    val token: String,
-    val userId: Long,
-    val fullName: String,
-    val email: String,
-    val role: String
 )
 
 data class ErrorResponse(

@@ -1,4 +1,12 @@
+<<<<<<< HEAD:web/src/pages/Register.jsx
 import RegisterPage from "../features/auth/register/RegisterPage";
+=======
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { registerUser } from "./authService";
+import { authRoutes } from "./routes";
+import { dashboardRoutes } from "../dashboard/routes";
+>>>>>>> ccf7463243dfe01ba11fe0586113bc7eecfb4ea5:web/src/features/auth/Register.jsx
 
 export default RegisterPage;
   const navigate = useNavigate();
@@ -23,10 +31,10 @@ export default RegisterPage;
 
     setLoading(true);
     try {
-      const res = await axiosClient.post("/auth/register", form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/dashboard");
+      const data = await registerUser(form);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
+      navigate(dashboardRoutes.dashboard);
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     } finally {
@@ -51,7 +59,7 @@ export default RegisterPage;
           {loading ? "Creating account..." : "Register"}
         </button>
       </form>
-      <p>Already have an account? <Link to="/login">Log in</Link></p>
+      <p>Already have an account? <Link to={authRoutes.login}>Log in</Link></p>
     </div>
   );
 }

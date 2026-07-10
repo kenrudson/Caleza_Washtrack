@@ -1,6 +1,14 @@
+<<<<<<< HEAD:web/src/pages/Login.jsx
 import LoginPage from "../features/auth/login/LoginPage";
 
 export default LoginPage;
+=======
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { loginUser } from "./authService";
+import { authRoutes } from "./routes";
+import { dashboardRoutes } from "../dashboard/routes";
+>>>>>>> ccf7463243dfe01ba11fe0586113bc7eecfb4ea5:web/src/features/auth/Login.jsx
 
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
@@ -15,10 +23,10 @@ export default LoginPage;
     setError("");
     setLoading(true);
     try {
-      const res = await axiosClient.post("/auth/login", form);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/dashboard");
+      const data = await loginUser(form);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data));
+      navigate(dashboardRoutes.dashboard);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
@@ -39,7 +47,7 @@ export default LoginPage;
           {loading ? "Logging in..." : "Log In"}
         </button>
       </form>
-      <p>Don't have an account? <Link to="/register">Register</Link></p>
+      <p>Don&apos;t have an account? <Link to={authRoutes.register}>Register</Link></p>
     </div>
   );
 }

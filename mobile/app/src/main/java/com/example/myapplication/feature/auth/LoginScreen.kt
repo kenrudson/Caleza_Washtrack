@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screens
+package com.example.myapplication.feature.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontFamily
@@ -27,12 +26,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.api.ErrorResponse
-import com.example.myapplication.api.LoginRequest
-import com.example.myapplication.api.NetworkClient
+import com.example.myapplication.feature.auth.AuthRepository
+import com.example.myapplication.feature.auth.ErrorResponse
+import com.example.myapplication.feature.auth.LoginRequest
 import com.example.myapplication.utils.SessionManager
 import com.google.gson.Gson
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,11 +51,9 @@ fun LoginScreen(
     val coroutineScope = rememberCoroutineScope()
     val focusManager = LocalFocusManager.current
 
-    // Modern color palette matching the web app styling (dark theme, slate, and vibrant violet/blue accent)
     val darkBackground = Color(0xFF242424)
     val cardBackground = Color(0xFF1A1A1A)
     val accentColor = Color(0xFF646CFF)
-    val accentHoverColor = Color(0xFF535BF2)
     val textColor = Color(0xFFEDEDED)
     val placeholderColor = Color(0xFF888888)
     val errorColor = Color(0xFFE57373)
@@ -92,7 +88,6 @@ fun LoginScreen(
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
 
-                // Email Input
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it; error = "" },
@@ -120,7 +115,6 @@ fun LoginScreen(
                         .padding(bottom = 16.dp)
                 )
 
-                // Password Input
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; error = "" },
@@ -158,7 +152,6 @@ fun LoginScreen(
                         .padding(bottom = 16.dp)
                 )
 
-                // Error Message Display
                 if (error.isNotEmpty()) {
                     Text(
                         text = error,
@@ -171,7 +164,6 @@ fun LoginScreen(
                     )
                 }
 
-                // Submit Button
                 Button(
                     onClick = {
                         if (email.isBlank() || password.isBlank()) {
@@ -185,7 +177,7 @@ fun LoginScreen(
                         coroutineScope.launch {
                             try {
                                 val response = withContext(Dispatchers.IO) {
-                                    NetworkClient.apiService.login(LoginRequest(email.trim(), password))
+                                    AuthRepository.login(LoginRequest(email.trim(), password))
                                 }
                                 if (response.isSuccessful && response.body() != null) {
                                     val authRes = response.body()!!
@@ -236,7 +228,6 @@ fun LoginScreen(
                     }
                 }
 
-                // Redirect Link
                 TextButton(onClick = onNavigateToRegister) {
                     Text(
                         text = "Don't have an account? Register",
