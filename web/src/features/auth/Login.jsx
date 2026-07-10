@@ -1,15 +1,10 @@
-<<<<<<< HEAD:web/src/pages/Login.jsx
-import LoginPage from "../features/auth/login/LoginPage";
-
-export default LoginPage;
-=======
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "./authService";
 import { authRoutes } from "./routes";
 import { dashboardRoutes } from "../dashboard/routes";
->>>>>>> ccf7463243dfe01ba11fe0586113bc7eecfb4ea5:web/src/features/auth/Login.jsx
 
+export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -40,9 +35,7 @@ import { dashboardRoutes } from "../dashboard/routes";
       <form onSubmit={handleSubmit}>
         <input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required />
         <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
-
         {error && <p className="error">{error}</p>}
-
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Log In"}
         </button>
