@@ -10,15 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-<<<<<<< HEAD
-import com.example.myapplication.features.dashboard.DashboardScreen
-import com.example.myapplication.features.login.LoginScreen
-import com.example.myapplication.features.registration.RegisterScreen
-=======
 import com.example.myapplication.feature.dashboard.DashboardScreen
 import com.example.myapplication.feature.auth.LoginScreen
 import com.example.myapplication.feature.auth.RegisterScreen
->>>>>>> ccf7463243dfe01ba11fe0586113bc7eecfb4ea5
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.utils.SessionManager
 
@@ -26,9 +20,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        
-        val sessionManager = SessionManager(this)
 
+        val sessionManager = SessionManager(this)
         setContent {
             MyApplicationTheme {
                 var currentScreen by remember {
@@ -36,7 +29,6 @@ class MainActivity : ComponentActivity() {
                         if (sessionManager.isLoggedIn()) Screen.Dashboard else Screen.Login
                     )
                 }
-
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Box(modifier = Modifier.padding(innerPadding)) {
                         when (currentScreen) {

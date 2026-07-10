@@ -28,46 +28,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.feature.dashboard.DashboardRepository
 import com.example.myapplication.ui.theme.*
 import com.example.myapplication.utils.SessionManager
+import kotlinx.coroutines.launch
+import java.util.Calendar
 
-val STATUS_STEPS = listOf("Pending", "Delivered", "Processing", "Ready", "Picked Up")
-
-val STATUS_COLORS = mapOf(
-    "Pending" to StatusPending,
-    "Picked Up" to StatusPickedUp,
-    "Processing" to StatusProcessing,
-    "Ready" to StatusReady,
-    "Delivered" to StatusDelivered
-)
-
-val STATUS_BG_COLORS = mapOf(
-    "Pending" to StatusPendingBg,
-    "Picked Up" to StatusPickedUpBg,
-    "Processing" to StatusProcessingBg,
-    "Ready" to StatusReadyBg,
-    "Delivered" to StatusDeliveredBg
-)
-
-val SERVICE_ICONS = mapOf(
-    "Wash & Fold" to "🧺",
-    "Dry Clean" to "👔",
-    "Fold Only" to "👕"
-)
-
-fun getInitials(name: String): String {
-    return name.split(" ")
-        .take(2)
-        .mapNotNull { it.firstOrNull()?.uppercase() }
-        .joinToString("")
-}
-
-fun getNextStatus(current: String): String? {
-    val idx = STATUS_STEPS.indexOf(current)
-    return if (idx in 0 until STATUS_STEPS.size - 1) STATUS_STEPS[idx + 1] else null
-}
-
+// ═══════════════════════════════════════════════════════════════
+// ─── Main Dashboard Screen ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
@@ -77,20 +45,34 @@ fun DashboardScreen(
     val fullName = sessionManager.getFullName() ?: "User"
     val role = sessionManager.getRole() ?: "CUSTOMER"
     val isStaff = role == "STAFF"
+    val userId = sessionManager.getUserId()
 
     var showNotifications by remember { mutableStateOf(false) }
-    var orders by remember { mutableStateOf(emptyList<Order>()) }
-    var notifications by remember { mutableStateOf(emptyList<NotificationItem>()) }
+    var showNewOrderSheet by remember { mutableStateOf(false) }
+    var staffOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
+    var customerOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
+    var notifications by remember { mutableStateOf<List<NotificationItem>>(emptyList()) }
 
-    val unreadCount = notifications.count { !it.read }
+    val coroutineScope = rememberCoroutineScope()
+
+    suspend fun refreshOrders() {
+        if (isStaff) {
+            staffOrders = DashboardRepository.loadOrders(isStaff = true)
+        } else {
+            customerOrders = DashboardRepository.loadOrders(isStaff = false, userId = userId)
+        }
+    }
 
     LaunchedEffect(isStaff) {
-        orders = DashboardRepository.loadOrders(isStaff)
+        refreshOrders()
         notifications = DashboardRepository.loadNotifications()
     }
 
+    val unreadCount = notifications.count { !it.read }
+
     Scaffold(
         topBar = {
+            // Top App Bar
             TopAppBar(
                 title = {
                     Column {
@@ -109,6 +91,7 @@ fun DashboardScreen(
                     }
                 },
                 actions = {
+                    // Notification bell
                     Box {
                         IconButton(onClick = { showNotifications = !showNotifications }) {
                             Icon(
@@ -129,6 +112,7 @@ fun DashboardScreen(
                             }
                         }
                     }
+                    // Logout
                     IconButton(onClick = {
                         sessionManager.clearSession()
                         onLogout()
@@ -148,6 +132,7 @@ fun DashboardScreen(
         },
         containerColor = BgPrimary,
         bottomBar = {
+            // Bottom Navigation
             NavigationBar(
                 containerColor = BgSecondary,
                 contentColor = TextSecondary,
@@ -182,7 +167,7 @@ fun DashboardScreen(
                 if (!isStaff) {
                     NavigationBarItem(
                         selected = false,
-                        onClick = { },
+                        onClick = { showNewOrderSheet = true },
                         icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
                         label = { Text("New Order", fontSize = 11.sp) },
                         colors = NavigationBarItemDefaults.colors(
@@ -193,61 +178,81 @@ fun DashboardScreen(
                             indicatorColor = AccentSubtle
                         )
                     )
-                }
-            }
-        }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(it)
-        ) {
-            Text(
-                text = "Welcome back, $fullName",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
-            )
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item {
-                    Text(
-                        text = "Orders",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
+                } else {
+                    NavigationBarItem(
+                        selected = false,
+                        onClick = { },
+                        icon = { Icon(Icons.Outlined.Payments, contentDescription = null) },
+                        label = { Text("Payments", fontSize = 11.sp) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = AccentPrimary,
+                            selectedTextColor = AccentPrimary,
+                            unselectedIconColor = TextMuted,
+                            unselectedTextColor = TextMuted,
+                            indicatorColor = AccentSubtle
+                        )
                     )
                 }
-                itemsIndexed(orders) { _, order ->
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = BgSecondary)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(order.id, fontWeight = FontWeight.Bold, color = TextPrimary)
-                            if (isStaff) {
-                                Text(order.customer, color = TextSecondary)
-                            }
-                            Text(order.service, color = TextSecondary)
-                            Text("Status: ${order.status}", color = TextPrimary)
-                            Text("Price: ₱${order.price}", color = TextPrimary)
-                            Text("Paid: ${if (order.paid) "Yes" else "No"}", color = TextPrimary)
-                            if (isStaff && !order.paid) {
-                                Button(
-                                    onClick = { },
-                                    modifier = Modifier.padding(top = 8.dp)
-                                ) {
-                                    Text("Record Payment")
-                                }
-                            }
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { },
+                    icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
+                    label = { Text("Profile", fontSize = 11.sp) },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = AccentPrimary,
+                        selectedTextColor = AccentPrimary,
+                        unselectedIconColor = TextMuted,
+                        unselectedTextColor = TextMuted,
+                        indicatorColor = AccentSubtle
+                    )
+                )
+            }
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            if (isStaff) {
+                StaffDashboardContent(
+                    fullName = fullName,
+                    orders = staffOrders,
+                    onStatusUpdate = { orderId ->
+                        coroutineScope.launch {
+                            val result = DashboardRepository.advanceOrderStatus(orderId)
+                            result.onSuccess { refreshOrders() }
+                            // On failure, silently leaves the queue unchanged; the staff
+                            // member can retry. (Same lightweight error handling as the
+                            // rest of this screen — no toast/snackbar system exists yet.)
+                        }
+                    },
+                    onRecordPayment = { orderId ->
+                        staffOrders = staffOrders.map { order ->
+                            if (order.id == orderId) order.copy(paid = true) else order
                         }
                     }
-                }
+                )
+            } else {
+                CustomerDashboardContent(fullName = fullName, customerOrders = customerOrders)
+            }
+
+            // Notification overlay
+            if (showNotifications) {
+                NotificationPanel(
+                    notifications = notifications,
+                    onDismiss = { showNotifications = false }
+                )
+            }
+
+            // New Order sheet (FR-004 + FR-005)
+            if (showNewOrderSheet) {
+                NewOrderSheet(
+                    userId = userId,
+                    onDismiss = { showNewOrderSheet = false },
+                    onOrderCreated = {
+                        showNewOrderSheet = false
+                        coroutineScope.launch { refreshOrders() }
+                    }
+                )
             }
         }
     }
 }
+

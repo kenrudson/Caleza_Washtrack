@@ -21,26 +21,11 @@ object NetworkClient {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-<<<<<<< HEAD
-    private val retrofit by lazy {
-=======
     val retrofit: Retrofit by lazy {
->>>>>>> ccf7463243dfe01ba11fe0586113bc7eecfb4ea5
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-<<<<<<< HEAD
-    }
-
-    val apiService: AuthApiService by lazy {
-        retrofit.create(AuthApiService::class.java)
-    }
-
-    val orderApiService: OrderApiService by lazy {
-        retrofit.create(OrderApiService::class.java)
-=======
->>>>>>> ccf7463243dfe01ba11fe0586113bc7eecfb4ea5
     }
 }
