@@ -20,3 +20,9 @@ export async function advanceOrderStatus(orderId) {
   const response = await axiosClient.post(`/staff/orders/${orderId}/advance-status`);
   return response.data;
 }
+
+// Interim lightweight payment marking (see backend StaffOrderService for scope note)
+export async function markOrderAsPaid(orderId) {
+  const response = await axiosClient.post(`/staff/orders/${orderId}/mark-paid`);
+  return response.data;
+}

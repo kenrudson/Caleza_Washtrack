@@ -36,12 +36,21 @@ import java.util.Calendar
 // ═══════════════════════════════════════════════════════════════
 // ─── Staff Dashboard Content ────────────────────────────────
 // ═══════════════════════════════════════════════════════════════
+// activeTab controls which bottom-nav view is shown:
+//   "dashboard" -> stats + a single combined Order Queue where each order shows
+//                  both the status-advance action and the payment-recording action
+//                  together (matches the web app's side-by-side layout, adapted for
+//                  a single-column phone screen)
+//   "orders"    -> the full, read-only All Orders list (matches the web app's
+//                  comprehensive order history table)
 @Composable
 fun StaffDashboardContent(
     fullName: String,
     orders: List<Order>,
+    activeTab: String,
     onStatusUpdate: (Long) -> Unit,
-    onRecordPayment: (String) -> Unit
+    onRecordPayment: (Long) -> Unit,
+    errorMessage: String? = null
 ) {
     val pendingCount = orders.count { it.status == "Pending" }
     val processingCount = orders.count { it.status in listOf("Picked Up", "Processing") }
@@ -56,100 +65,137 @@ fun StaffDashboardContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Welcome Banner
-        item {
-            WelcomeBanner(
-                greeting = "Good ${getTimeGreeting()}, ${fullName.split(" ").firstOrNull() ?: "Staff"}! 💼",
-                subtitle = "You have $pendingCount pending and $unpaidCount unpaid orders awaiting action."
-            )
-        }
-
-        // Stats Row
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.HourglassTop,
-                    iconBg = StatusPendingBg,
-                    iconColor = StatusPending,
-                    value = pendingCount.toString(),
-                    label = "Pending"
-                )
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Sync,
-                    iconBg = StatusProcessingBg,
-                    iconColor = StatusProcessing,
-                    value = processingCount.toString(),
-                    label = "In Progress"
-                )
-            }
-        }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.CheckCircle,
-                    iconBg = StatusReadyBg,
-                    iconColor = StatusReady,
-                    value = readyCount.toString(),
-                    label = "Ready"
-                )
-                StatCard(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Filled.Payments,
-                    iconBg = AccentSubtle,
-                    iconColor = AccentPrimary,
-                    value = "₱$totalRevenue",
-                    label = "Revenue"
-                )
-            }
-        }
-
-        // Order Queue
-        item {
-            SectionCard(title = "📦  Order Queue") {
-                Column {
-                    val activeOrders = orders.filter { it.status != "Delivered" }
-                    activeOrders.forEachIndexed { index, order ->
-                        StaffOrderQueueItem(
-                            order = order,
-                            onStatusUpdate = { onStatusUpdate(order.orderId) }
+        if (activeTab == "orders") {
+            // ── Orders Tab: full read-only history, matches the web All Orders table ──
+            item {
+                SectionCard(title = "📋  All Orders") {
+                    if (orders.isEmpty()) {
+                        Text(
+                            text = "No orders yet.",
+                            color = TextMuted,
+                            fontSize = 13.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            textAlign = TextAlign.Center
                         )
-                        if (index < activeOrders.size - 1) {
-                            HorizontalDivider(
-                                color = BorderSubtle,
-                                thickness = 1.dp,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
+                    } else {
+                        Column {
+                            orders.forEachIndexed { index, order ->
+                                AllOrdersListItem(order = order)
+                                if (index < orders.size - 1) {
+                                    HorizontalDivider(
+                                        color = BorderSubtle,
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
+        } else {
+            // ── Dashboard Tab: stats + combined actionable Order Queue ──
+            item {
+                WelcomeBanner(
+                    greeting = "Good ${getTimeGreeting()}, ${fullName.split(" ").firstOrNull() ?: "Staff"}! 💼",
+                    subtitle = "You have $pendingCount pending and $unpaidCount unpaid orders awaiting action."
+                )
+            }
 
-        // Payment Status
-        item {
-            SectionCard(title = "💳  Payment Status") {
-                Column {
-                    val payableOrders = orders.filter { it.status != "Pending" }
-                    payableOrders.forEachIndexed { index, order ->
-                        StaffPaymentItem(
-                            order = order,
-                            onRecordPayment = { onRecordPayment(order.id) }
-                        )
-                        if (index < payableOrders.size - 1) {
-                            HorizontalDivider(
-                                color = BorderSubtle,
-                                thickness = 1.dp,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+            if (errorMessage != null) {
+                item {
+                    Text(
+                        text = errorMessage,
+                        color = ErrorRed,
+                        fontSize = 13.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(ErrorRedBg, RoundedCornerShape(10.dp))
+                            .padding(12.dp)
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.HourglassTop,
+                        iconBg = StatusPendingBg,
+                        iconColor = StatusPending,
+                        value = pendingCount.toString(),
+                        label = "Pending"
+                    )
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.Sync,
+                        iconBg = StatusProcessingBg,
+                        iconColor = StatusProcessing,
+                        value = processingCount.toString(),
+                        label = "In Progress"
+                    )
+                }
+            }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.CheckCircle,
+                        iconBg = StatusReadyBg,
+                        iconColor = StatusReady,
+                        value = readyCount.toString(),
+                        label = "Ready"
+                    )
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.Payments,
+                        iconBg = AccentSubtle,
+                        iconColor = AccentPrimary,
+                        value = "₱$totalRevenue",
+                        label = "Revenue"
+                    )
+                }
+            }
+
+            // Combined Order Queue: status advancement + payment recording together,
+            // for every order still needing attention (not yet Delivered AND Paid).
+            item {
+                SectionCard(title = "📦  Order Queue") {
+                    Column {
+                        val actionableOrders = orders.filter { it.status != "Delivered" || !it.paid }
+                        if (actionableOrders.isEmpty()) {
+                            Text(
+                                text = "No orders need attention right now.",
+                                color = TextMuted,
+                                fontSize = 13.sp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                textAlign = TextAlign.Center
                             )
+                        } else {
+                            actionableOrders.forEachIndexed { index, order ->
+                                StaffOrderCard(
+                                    order = order,
+                                    onStatusUpdate = { onStatusUpdate(order.orderId) },
+                                    onRecordPayment = { onRecordPayment(order.orderId) }
+                                )
+                                if (index < actionableOrders.size - 1) {
+                                    HorizontalDivider(
+                                        color = BorderSubtle,
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -160,4 +206,3 @@ fun StaffDashboardContent(
         item { Spacer(modifier = Modifier.height(8.dp)) }
     }
 }
-

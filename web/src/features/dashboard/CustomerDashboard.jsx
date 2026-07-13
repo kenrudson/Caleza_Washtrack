@@ -134,11 +134,6 @@ export default function CustomerDashboard({
           <div className="section-body">
             <div className="quick-actions">
               <button className="quick-action-btn" onClick={onOpenNewOrder}>
-                <div className="action-icon" style={{ background: "var(--accent-subtle)", color: "var(--accent-primary)" }}>📅</div>
-                <span className="action-label">Schedule Pickup</span>
-                <span className="action-desc">Book a pickup date</span>
-              </button>
-              <button className="quick-action-btn" onClick={onOpenNewOrder}>
                 <div className="action-icon" style={{ background: "var(--status-ready-bg)", color: "var(--status-ready)" }}>➕</div>
                 <span className="action-label">New Order</span>
                 <span className="action-desc">Create laundry order</span>

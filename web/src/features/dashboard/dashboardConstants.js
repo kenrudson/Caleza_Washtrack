@@ -15,7 +15,7 @@ export const MOCK_NOTIFICATIONS = [
   { id: 4, text: "Payment received for ORD-1035. Thank you!", time: "2 days ago", read: true },
 ];
 
-export const STATUS_STEPS = ["Pending", "Delivered", "Processing", "Ready", "Picked Up"];
+export const STATUS_STEPS = ["Pending", "Picked Up", "Processing", "Ready", "Delivered"];
 
 export const SERVICE_ICONS = {
   "Wash & Fold": "🧺",

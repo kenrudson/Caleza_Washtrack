@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchCustomerOrders, fetchAllOrdersForStaff, advanceOrderStatus } from "./dashboardService";
+import { fetchCustomerOrders, fetchAllOrdersForStaff, advanceOrderStatus, markOrderAsPaid } from "./dashboardService";
 import BellIcon from "./components/BellIcon";
 import CustomerDashboard from "./CustomerDashboard";
 import StaffDashboard from "./StaffDashboard";
@@ -14,9 +14,7 @@ export default function Dashboard() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isStaff = user.role === "STAFF";
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [activeNav, setActiveNav] = useState("dashboard");
 
   // Staff state — real data from the backend (FR-007)
   const [staffOrders, setStaffOrders] = useState([]);
@@ -75,144 +73,42 @@ export default function Dashboard() {
   const handleStatusUpdate = (orderId) => {
     advanceOrderStatus(orderId)
       .then(() => loadStaffOrders())
-      .catch(() => setStaffFetchError("Could not update that order's status. Please try again."));
+      .catch((err) =>
+        setStaffFetchError(err.response?.data?.message || "Could not update that order's status. Please try again.")
+      );
   };
 
-  // NOTE: payment recording does not yet have a backend endpoint — this still only
-  // updates local state and will not persist. Flagged as a known follow-up item.
+  // Interim lightweight payment marking, persisted via the backend (see
+  // dashboardService.markOrderAsPaid / backend StaffOrderService for scope note).
   const handleRecordPayment = (orderId) => {
-    setStaffOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, paid: true } : o))
-    );
+    markOrderAsPaid(orderId)
+      .then(() => loadStaffOrders())
+      .catch(() => setStaffFetchError("Could not record that payment. Please try again."));
   };
 
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
 
   return (
     <div className="dashboard-shell">
-      {/* Sidebar Overlay (mobile) */}
-      <div
-        className={`sidebar-overlay ${sidebarOpen ? "active" : ""}`}
-        onClick={() => setSidebarOpen(false)}
-      />
-
-      {/* ── Sidebar ───────────────────────────────── */}
-      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="sidebar-brand">
-          <div className="brand-icon">🫧</div>
-          <div className="brand-text">
-            <span className="brand-name">WashTrack</span>
-            <span className="brand-subtitle">Laundry Management</span>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          <span className="sidebar-section-label">Main</span>
-          <button
-            className={`nav-item ${activeNav === "dashboard" ? "active" : ""}`}
-            onClick={() => { setActiveNav("dashboard"); setSidebarOpen(false); }}
-          >
-            <span className="nav-icon">📊</span>
-            Dashboard
-          </button>
-
-          {!isStaff ? (
-            <>
-              <button
-                className={`nav-item ${activeNav === "orders" ? "active" : ""}`}
-                onClick={() => { setActiveNav("orders"); setSidebarOpen(false); }}
-              >
-                <span className="nav-icon">📋</span>
-                My Orders
-                <span className="nav-badge">
-                  {customerOrders.filter((o) => o.status !== "Delivered").length}
-                </span>
-              </button>
-              <button
-                className={`nav-item ${activeNav === "pickup" ? "active" : ""}`}
-                onClick={() => { setActiveNav("pickup"); setSidebarOpen(false); }}
-              >
-                <span className="nav-icon">📅</span>
-                Schedule Pickup
-              </button>
-              <button
-                className={`nav-item ${activeNav === "neworder" ? "active" : ""}`}
-                onClick={() => { setActiveNav("neworder"); setSidebarOpen(false); }}
-              >
-                <span className="nav-icon">➕</span>
-                New Order
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                className={`nav-item ${activeNav === "manage" ? "active" : ""}`}
-                onClick={() => { setActiveNav("manage"); setSidebarOpen(false); }}
-              >
-                <span className="nav-icon">📦</span>
-                Manage Orders
-                <span className="nav-badge">
-                  {staffOrders.filter((o) => o.status !== "Delivered").length}
-                </span>
-              </button>
-              <button
-                className={`nav-item ${activeNav === "payments" ? "active" : ""}`}
-                onClick={() => { setActiveNav("payments"); setSidebarOpen(false); }}
-              >
-                <span className="nav-icon">💰</span>
-                Payments
-              </button>
-            </>
-          )}
-
-          <span className="sidebar-section-label">Account</span>
-          <button
-            className={`nav-item ${activeNav === "notifications" ? "active" : ""}`}
-            onClick={() => { setActiveNav("notifications"); setSidebarOpen(false); }}
-          >
-            <span className="nav-icon"><BellIcon size={18} /></span>
-            Notifications
-            {unreadCount > 0 && <span className="nav-badge">{unreadCount}</span>}
-          </button>
-          <button
-            className={`nav-item ${activeNav === "profile" ? "active" : ""}`}
-            onClick={() => { setActiveNav("profile"); setSidebarOpen(false); }}
-          >
-            <span className="nav-icon">👤</span>
-            Profile
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="sidebar-user">
-            <div className="user-avatar">{getInitials(user.fullName || "User")}</div>
-            <div className="user-info">
-              <span className="user-name">{user.fullName || "User"}</span>
-              <span className="user-role">{user.role || "CUSTOMER"}</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-
       {/* ── Main Content ──────────────────────────── */}
       <main className="main-content">
         {/* Top Header */}
         <header className="top-header">
           <div className="header-left">
-            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
-              ☰
-            </button>
-            <div>
-              <div className="page-title">
-                {isStaff ? "Staff Dashboard" : "My Dashboard"}
-              </div>
-              <div className="page-subtitle">
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+            <div className="header-brand">
+              <div className="brand-icon">🫧</div>
+              <div>
+                <div className="page-title">
+                  {isStaff ? "Staff Dashboard" : "My Dashboard"}
+                </div>
+                <div className="page-subtitle">
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </div>
               </div>
             </div>
           </div>
@@ -249,6 +145,14 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="header-user">
+              <div className="user-avatar">{getInitials(user.fullName || "User")}</div>
+              <div className="user-info">
+                <span className="user-name">{user.fullName || "User"}</span>
+                <span className="user-role">{user.role || "CUSTOMER"}</span>
+              </div>
             </div>
 
             <button className="logout-btn" onClick={handleLogout}>

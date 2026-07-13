@@ -43,6 +43,7 @@ export function toStaffDisplayOrder(o) {
     orderId: o.orderId,
     id: o.orderCode,
     customer: o.customerName,
+    address: o.pickupAddress,
     service: SERVICE_TYPE_LABELS[o.serviceType] || o.serviceType,
     weight: o.weightKg,
     price: o.totalPrice,

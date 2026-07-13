@@ -197,9 +197,65 @@ fun OrderListItem(order: Order) {
     }
 }
 
-// ─── Staff Order Queue Item ─────────────────────────────────
+// ─── All Orders List Item (staff-facing, includes customer + date) ──
 @Composable
-fun StaffOrderQueueItem(order: Order, onStatusUpdate: () -> Unit) {
+fun AllOrdersListItem(order: Order) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = order.id,
+                    color = AccentPrimaryHover,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+                StatusBadge(status = order.status)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = order.customer,
+                color = TextPrimary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "📍 ${order.address}",
+                color = TextSecondary,
+                fontSize = 11.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "${SERVICE_ICONS[order.service] ?: "🧺"} ${order.service} · ${order.weight}kg · ${order.date}",
+                color = TextSecondary,
+                fontSize = 11.sp
+            )
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = "₱${order.price}",
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                fontSize = 14.sp
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            PaymentBadge(paid = order.paid)
+        }
+    }
+}
+
+// ─── Staff Order Card (status advancement + payment recording, combined) ──
+@Composable
+fun StaffOrderCard(order: Order, onStatusUpdate: () -> Unit, onRecordPayment: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -230,74 +286,70 @@ fun StaffOrderQueueItem(order: Order, onStatusUpdate: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
+                    text = "📍 ${order.address}",
+                    color = TextSecondary,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
                     text = "${SERVICE_ICONS[order.service] ?: "🧺"} ${order.service} · ${order.weight}kg · ₱${order.price}",
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
             }
-            StatusBadge(status = order.status)
-        }
-        // Action button
-        val nextStatus = getNextStatus(order.status)
-        if (nextStatus != null) {
-            Spacer(modifier = Modifier.height(10.dp))
-            Button(
-                onClick = onStatusUpdate,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentPrimary,
-                    contentColor = Color.White
-                ),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                Text(
-                    text = "→ Move to $nextStatus",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
+            Column(horizontalAlignment = Alignment.End) {
+                StatusBadge(status = order.status)
+                Spacer(modifier = Modifier.height(6.dp))
+                PaymentBadge(paid = order.paid)
             }
         }
-    }
-}
 
-// ─── Staff Payment Item ─────────────────────────────────────
-@Composable
-fun StaffPaymentItem(order: Order, onRecordPayment: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
+        // Status advance action — available from Pending through Ready (BR-003 sequence)
+        val nextStatus = getNextStatus(order.status)
+        // Payment action — available from Picked Up through Delivered, matching web (status != Pending)
+        val canRecordPayment = order.status != "Pending" && !order.paid
+
+        if (nextStatus != null || canRecordPayment) {
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(order.id, color = AccentPrimaryHover, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text(order.customer, color = TextPrimary, fontSize = 13.sp)
-            }
-            Text("₱${order.price} · ${order.service}", color = TextSecondary, fontSize = 12.sp)
-        }
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PaymentBadge(paid = order.paid)
-            if (!order.paid) {
-                Button(
-                    onClick = onRecordPayment,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentPrimary,
-                        contentColor = Color.White
-                    ),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                    modifier = Modifier.height(30.dp)
-                ) {
-                    Text("Pay", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                if (nextStatus != null) {
+                    Button(
+                        onClick = onStatusUpdate,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentPrimary,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "→ Move to $nextStatus",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                if (canRecordPayment) {
+                    Button(
+                        onClick = onRecordPayment,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = StatusReady,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = "Record Payment",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }

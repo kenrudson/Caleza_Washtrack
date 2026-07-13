@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -36,6 +35,11 @@ android {
     }
     buildFeatures {
         compose = true
+    }
+    composeOptions {
+        // Compose Compiler version matching Kotlin 1.9.22, required since the
+        // org.jetbrains.kotlin.plugin.compose Gradle plugin only exists for Kotlin 2.0+
+        kotlinCompilerExtensionVersion = "1.5.8"
     }
 }
 

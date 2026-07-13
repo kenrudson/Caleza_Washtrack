@@ -129,7 +129,7 @@ fun NewOrderSheet(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Time Slot *") },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = timeSlotMenuExpanded) }
                 )
                 ExposedDropdownMenu(expanded = timeSlotMenuExpanded, onDismissRequest = { timeSlotMenuExpanded = false }) {
@@ -164,7 +164,7 @@ fun NewOrderSheet(
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Service Type *") },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = serviceMenuExpanded) }
                 )
                 ExposedDropdownMenu(expanded = serviceMenuExpanded, onDismissRequest = { serviceMenuExpanded = false }) {

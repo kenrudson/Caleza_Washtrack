@@ -1,11 +1,25 @@
 package com.example.myapplication.feature.dashboard
 
 import com.example.myapplication.api.NetworkClient
+import com.google.gson.Gson
 
 object DashboardRepository {
 
     private val apiService: DashboardApiService by lazy {
         NetworkClient.retrofit.create(DashboardApiService::class.java)
+    }
+
+    private data class ErrorBody(val message: String?)
+
+    // Backend errors come back as JSON, e.g. {"message": "..."} — this pulls out
+    // just the message text instead of showing the raw JSON to the user.
+    private fun parseErrorMessage(rawBody: String?, fallback: String): String {
+        if (rawBody.isNullOrBlank()) return fallback
+        return try {
+            Gson().fromJson(rawBody, ErrorBody::class.java)?.message ?: fallback
+        } catch (e: Exception) {
+            fallback
+        }
     }
 
     private val notifications = listOf(
@@ -50,7 +64,7 @@ object DashboardRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!.toUiOrder())
             } else {
-                val message = response.errorBody()?.string() ?: "Could not create order"
+                val message = parseErrorMessage(response.errorBody()?.string(), "Could not create order")
                 Result.failure(Exception(message))
             }
         } catch (e: Exception) {
@@ -58,14 +72,15 @@ object DashboardRepository {
         }
     }
 
-    // FR-007: advances an order to its next status (BR-003 sequence enforced server-side)
+    // FR-007: advances an order to its next status (BR-003 sequence, plus the pickup-date
+    // check, both enforced server-side)
     suspend fun advanceOrderStatus(orderId: Long): Result<Order> {
         return try {
             val response = apiService.advanceOrderStatus(orderId)
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!.toStaffUiOrder())
             } else {
-                val message = response.errorBody()?.string() ?: "Could not update order status"
+                val message = parseErrorMessage(response.errorBody()?.string(), "Could not update order status")
                 Result.failure(Exception(message))
             }
         } catch (e: Exception) {
@@ -73,7 +88,20 @@ object DashboardRepository {
         }
     }
 
-    // NOTE: payment recording does not yet have a backend endpoint — kept as a
-    // known follow-up item, same as the web app's current state.
+    // Interim lightweight payment marking, reusing the existing Order.paid flag.
+    // Does not yet record payment type (on-delivery vs on-pickup) or create a
+    // dedicated Payment record as described in the approved ERD — planned separately.
+    suspend fun markOrderAsPaid(orderId: Long): Result<Order> {
+        return try {
+            val response = apiService.markOrderAsPaid(orderId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.toStaffUiOrder())
+            } else {
+                val message = parseErrorMessage(response.errorBody()?.string(), "Could not record payment")
+                Result.failure(Exception(message))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Could not connect to server. Please try again."))
+        }
+    }
 }
-

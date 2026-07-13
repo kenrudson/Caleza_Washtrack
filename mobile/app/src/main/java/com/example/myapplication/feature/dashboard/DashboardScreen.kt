@@ -49,6 +49,8 @@ fun DashboardScreen(
 
     var showNotifications by remember { mutableStateOf(false) }
     var showNewOrderSheet by remember { mutableStateOf(false) }
+    var staffTab by remember { mutableStateOf("dashboard") } // "dashboard" | "orders" (staff only)
+    var staffActionError by remember { mutableStateOf<String?>(null) }
     var staffOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
     var customerOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
     var notifications by remember { mutableStateOf<List<NotificationItem>>(emptyList()) }
@@ -139,8 +141,8 @@ fun DashboardScreen(
                 tonalElevation = 0.dp
             ) {
                 NavigationBarItem(
-                    selected = true,
-                    onClick = { },
+                    selected = !isStaff || staffTab == "dashboard",
+                    onClick = { staffTab = "dashboard" },
                     icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
                     label = { Text("Dashboard", fontSize = 11.sp) },
                     colors = NavigationBarItemDefaults.colors(
@@ -152,8 +154,8 @@ fun DashboardScreen(
                     )
                 )
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { },
+                    selected = isStaff && staffTab == "orders",
+                    onClick = { if (isStaff) staffTab = "orders" },
                     icon = { Icon(Icons.Outlined.Receipt, contentDescription = null) },
                     label = { Text(if (isStaff) "Orders" else "My Orders", fontSize = 11.sp) },
                     colors = NavigationBarItemDefaults.colors(
@@ -170,20 +172,6 @@ fun DashboardScreen(
                         onClick = { showNewOrderSheet = true },
                         icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
                         label = { Text("New Order", fontSize = 11.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = AccentPrimary,
-                            selectedTextColor = AccentPrimary,
-                            unselectedIconColor = TextMuted,
-                            unselectedTextColor = TextMuted,
-                            indicatorColor = AccentSubtle
-                        )
-                    )
-                } else {
-                    NavigationBarItem(
-                        selected = false,
-                        onClick = { },
-                        icon = { Icon(Icons.Outlined.Payments, contentDescription = null) },
-                        label = { Text("Payments", fontSize = 11.sp) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = AccentPrimary,
                             selectedTextColor = AccentPrimary,
@@ -214,20 +202,28 @@ fun DashboardScreen(
                 StaffDashboardContent(
                     fullName = fullName,
                     orders = staffOrders,
+                    activeTab = staffTab,
                     onStatusUpdate = { orderId ->
                         coroutineScope.launch {
                             val result = DashboardRepository.advanceOrderStatus(orderId)
-                            result.onSuccess { refreshOrders() }
-                            // On failure, silently leaves the queue unchanged; the staff
-                            // member can retry. (Same lightweight error handling as the
-                            // rest of this screen — no toast/snackbar system exists yet.)
+                            result.onSuccess {
+                                staffActionError = null
+                                refreshOrders()
+                            }
+                            result.onFailure { staffActionError = it.message }
                         }
                     },
                     onRecordPayment = { orderId ->
-                        staffOrders = staffOrders.map { order ->
-                            if (order.id == orderId) order.copy(paid = true) else order
+                        coroutineScope.launch {
+                            val result = DashboardRepository.markOrderAsPaid(orderId)
+                            result.onSuccess {
+                                staffActionError = null
+                                refreshOrders()
+                            }
+                            result.onFailure { staffActionError = it.message }
                         }
-                    }
+                    },
+                    errorMessage = staffActionError
                 )
             } else {
                 CustomerDashboardContent(fullName = fullName, customerOrders = customerOrders)

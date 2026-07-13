@@ -19,4 +19,8 @@ interface DashboardApiService {
 
     @POST("staff/orders/{orderId}/advance-status")
     suspend fun advanceOrderStatus(@Path("orderId") orderId: Long): Response<StaffOrderResponse>
+
+    // Interim lightweight payment marking (see backend StaffOrderService for scope note)
+    @POST("staff/orders/{orderId}/mark-paid")
+    suspend fun markOrderAsPaid(@Path("orderId") orderId: Long): Response<StaffOrderResponse>
 }

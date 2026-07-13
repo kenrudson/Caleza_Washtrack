@@ -28,4 +28,14 @@ public class StaffOrderController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
+
+    // Interim lightweight payment marking (see StaffOrderService.markAsPaid for scope note)
+    @PostMapping("/{orderId}/mark-paid")
+    public ResponseEntity<?> markAsPaid(@PathVariable Long orderId) {
+        try {
+            return ResponseEntity.ok(staffOrderService.markAsPaid(orderId));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

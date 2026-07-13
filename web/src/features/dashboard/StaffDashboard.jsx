@@ -81,6 +81,9 @@ export default function StaffDashboard({ user, orders, loadingOrders, fetchError
                     <div className="queue-details">
                       {SERVICE_ICONS[order.service]} {order.service} · {order.weight}kg · ₱{order.price}
                     </div>
+                    <div className="queue-details" style={{ marginTop: "2px" }}>
+                      📍 {order.address}
+                    </div>
                   </div>
                   <span className={`status-badge ${STATUS_CLASS[order.status]}`}>{order.status}</span>
                   <div className="queue-actions">
@@ -121,7 +124,7 @@ export default function StaffDashboard({ user, orders, loadingOrders, fetchError
                     {order.paid ? "✓ Paid" : "Unpaid"}
                   </span>
                   {!order.paid && (
-                    <button className="btn-primary" style={{ fontSize: "0.72rem", padding: "5px 10px" }} onClick={() => onRecordPayment(order.id)}>
+                    <button className="btn-primary" style={{ fontSize: "0.72rem", padding: "5px 10px" }} onClick={() => onRecordPayment(order.orderId)}>
                       Record Payment
                     </button>
                   )}
@@ -145,6 +148,7 @@ export default function StaffDashboard({ user, orders, loadingOrders, fetchError
               <tr>
                 <th>Order ID</th>
                 <th>Customer</th>
+                <th>Address</th>
                 <th>Service</th>
                 <th>Weight</th>
                 <th>Price</th>
@@ -155,16 +159,17 @@ export default function StaffDashboard({ user, orders, loadingOrders, fetchError
             </thead>
             <tbody>
               {loadingOrders ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>Loading order queue...</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>Loading order queue...</td></tr>
               ) : fetchError ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px", color: "var(--status-unpaid)" }}>{fetchError}</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "24px", color: "var(--status-unpaid)" }}>{fetchError}</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>No orders yet.</td></tr>
+                <tr><td colSpan={9} style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>No orders yet.</td></tr>
               ) : (
                 orders.map((order) => (
                 <tr key={order.id}>
                   <td><span className="order-id">{order.id}</span></td>
                   <td>{order.customer}</td>
+                  <td style={{ color: "var(--text-secondary)", fontSize: "0.82rem", maxWidth: "180px" }}>{order.address}</td>
                   <td>
                     <span className="order-service">
                       <span className="service-icon">{SERVICE_ICONS[order.service] || "🧺"}</span>

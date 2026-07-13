@@ -3,6 +3,7 @@ package com.example.myapplication.feature.dashboard
 data class Order(
     val id: String,
     val customer: String = "",
+    val address: String = "",
     val service: String,
     val weight: Double,
     val price: Int,
@@ -94,6 +95,7 @@ fun StaffOrderResponse.toStaffUiOrder(): Order = Order(
     orderId = orderId,
     id = orderCode,
     customer = customerName,
+    address = pickupAddress,
     service = SERVICE_TYPE_LABELS[serviceType] ?: serviceType,
     weight = weightKg,
     price = totalPrice.toInt(),
