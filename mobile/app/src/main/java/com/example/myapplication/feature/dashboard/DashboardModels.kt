@@ -14,11 +14,55 @@ data class Order(
 )
 
 data class NotificationItem(
-    val id: Int,
+    val id: Long,
     val text: String,
     val time: String,
     val read: Boolean
 )
+
+// FR-010: real notifications, works identically for CUSTOMER and STAFF accounts
+data class NotificationResponse(
+    val notedId: Long,
+    val message: String,
+    val type: String,
+    val isRead: Boolean,
+    val sentAt: String
+)
+
+fun NotificationResponse.toUiNotification(): NotificationItem = NotificationItem(
+    id = notedId,
+    text = message,
+    time = formatTimeAgo(sentAt),
+    read = isRead
+)
+
+// Turns an ISO timestamp like "2026-07-12T14:30:00" into "2 hours ago", "3 days ago", etc.
+fun formatTimeAgo(isoString: String?): String {
+    if (isoString.isNullOrBlank()) return ""
+    return try {
+        // Parse "yyyy-MM-dd'T'HH:mm:ss" manually (no external date library dependency)
+        val datePart = isoString.substringBefore("T")
+        val timePart = isoString.substringAfter("T").take(8) // "HH:mm:ss"
+        val (year, month, day) = datePart.split("-").map { it.toInt() }
+        val (hour, minute, second) = timePart.split(":").map { it.toIntOrNull() ?: 0 }
+
+        val cal = java.util.Calendar.getInstance()
+        cal.set(year, month - 1, day, hour, minute, second)
+        val thenMillis = cal.timeInMillis
+        val nowMillis = System.currentTimeMillis()
+        val seconds = (nowMillis - thenMillis) / 1000
+
+        when {
+            seconds < 60 -> "Just now"
+            seconds < 3600 -> "${seconds / 60} minute${if (seconds / 60 == 1L) "" else "s"} ago"
+            seconds < 86400 -> "${seconds / 3600} hour${if (seconds / 3600 == 1L) "" else "s"} ago"
+            seconds < 604800 -> "${seconds / 86400} day${if (seconds / 86400 == 1L) "" else "s"} ago"
+            else -> "$month/$day/$year"
+        }
+    } catch (e: Exception) {
+        ""
+    }
+}
 
 // ─── Backend network models (FR-004, FR-005, FR-011) ─────────
 

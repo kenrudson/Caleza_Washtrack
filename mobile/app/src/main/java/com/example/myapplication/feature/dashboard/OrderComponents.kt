@@ -105,10 +105,11 @@ fun QuickActionButton(
     iconBg: Color,
     iconColor: Color,
     label: String,
-    desc: String
+    desc: String,
+    onClick: () -> Unit = {}
 ) {
     Card(
-        modifier = modifier.clickable { },
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = BgElevated),
         border = CardDefaults.outlinedCardBorder().copy(

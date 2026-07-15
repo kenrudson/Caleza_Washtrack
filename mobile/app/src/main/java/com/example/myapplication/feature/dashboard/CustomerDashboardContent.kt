@@ -37,7 +37,12 @@ import java.util.Calendar
 // ─── Customer Dashboard Content ─────────────────────────────
 // ═══════════════════════════════════════════════════════════════
 @Composable
-fun CustomerDashboardContent(fullName: String, customerOrders: List<Order>) {
+fun CustomerDashboardContent(
+    fullName: String,
+    customerOrders: List<Order>,
+    activeTab: String = "dashboard",
+    onNavigateToOrders: () -> Unit = {}
+) {
     val activeOrders = customerOrders.filter { it.status != "Delivered" }
     val latestOrder = activeOrders.firstOrNull()
     val totalOrders = customerOrders.size
@@ -51,6 +56,38 @@ fun CustomerDashboardContent(fullName: String, customerOrders: List<Order>) {
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        if (activeTab == "orders") {
+            // ── Orders Tab: dedicated, full order history (FR-011) ──
+            item {
+                SectionCard(title = "📋  Order History") {
+                    if (customerOrders.isEmpty()) {
+                        Text(
+                            text = "No orders yet. Tap New Order to get started.",
+                            color = TextMuted,
+                            fontSize = 13.sp,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    } else {
+                        Column {
+                            customerOrders.forEachIndexed { index, order ->
+                                OrderListItem(order = order)
+                                if (index < customerOrders.size - 1) {
+                                    HorizontalDivider(
+                                        color = BorderSubtle,
+                                        thickness = 1.dp,
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+        } else {
         // Welcome Banner
         item {
             WelcomeBanner(
@@ -180,7 +217,8 @@ fun CustomerDashboardContent(fullName: String, customerOrders: List<Order>) {
                             iconBg = StatusPendingBg,
                             iconColor = StatusPending,
                             label = "Order History",
-                            desc = "View past orders"
+                            desc = "View past orders",
+                            onClick = onNavigateToOrders
                         )
                         QuickActionButton(
                             modifier = Modifier.weight(1f),
@@ -215,6 +253,7 @@ fun CustomerDashboardContent(fullName: String, customerOrders: List<Order>) {
 
         // Bottom spacer
         item { Spacer(modifier = Modifier.height(8.dp)) }
+        }
     }
 }
 

@@ -22,13 +22,6 @@ object DashboardRepository {
         }
     }
 
-    private val notifications = listOf(
-        NotificationItem(1, "Your order ORD-1042 is now being processed.", "2 hours ago", false),
-        NotificationItem(2, "Order ORD-1038 is ready for pickup!", "5 hours ago", false),
-        NotificationItem(3, "Your order ORD-1035 has been delivered.", "2 days ago", true),
-        NotificationItem(4, "Payment received for ORD-1035. Thank you!", "2 days ago", true)
-    )
-
     // FR-007: staff order queue now comes from the real backend, same as the customer side.
     suspend fun loadOrders(isStaff: Boolean, userId: Long = -1L): List<Order> {
         return try {
@@ -52,8 +45,27 @@ object DashboardRepository {
         }
     }
 
-    suspend fun loadNotifications(): List<NotificationItem> {
-        return notifications
+    // FR-010: real notifications, works identically for CUSTOMER and STAFF accounts
+    suspend fun loadNotifications(userId: Long): List<NotificationItem> {
+        return try {
+            val response = apiService.getMyNotifications(userId)
+            if (response.isSuccessful) {
+                response.body()?.map { it.toUiNotification() } ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun markNotificationsRead(userId: Long) {
+        try {
+            apiService.markNotificationsRead(userId)
+        } catch (e: Exception) {
+            // Non-critical — if this fails, notifications simply stay marked unread
+            // until the next successful attempt.
+        }
     }
 
     // FR-004 + FR-005: creates the pickup request and order together, same as the web app.

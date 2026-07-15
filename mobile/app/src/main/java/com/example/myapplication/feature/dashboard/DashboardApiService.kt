@@ -23,4 +23,11 @@ interface DashboardApiService {
     // Interim lightweight payment marking (see backend StaffOrderService for scope note)
     @POST("staff/orders/{orderId}/mark-paid")
     suspend fun markOrderAsPaid(@Path("orderId") orderId: Long): Response<StaffOrderResponse>
+
+    // FR-010: real notifications, for both CUSTOMER and STAFF accounts
+    @GET("notifications/my/{userId}")
+    suspend fun getMyNotifications(@Path("userId") userId: Long): Response<List<NotificationResponse>>
+
+    @POST("notifications/my/{userId}/mark-read")
+    suspend fun markNotificationsRead(@Path("userId") userId: Long): Response<Unit>
 }

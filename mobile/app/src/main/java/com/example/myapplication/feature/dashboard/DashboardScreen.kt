@@ -49,7 +49,7 @@ fun DashboardScreen(
 
     var showNotifications by remember { mutableStateOf(false) }
     var showNewOrderSheet by remember { mutableStateOf(false) }
-    var staffTab by remember { mutableStateOf("dashboard") } // "dashboard" | "orders" (staff only)
+    var activeTab by remember { mutableStateOf("dashboard") } // "dashboard" | "orders" (both roles)
     var staffActionError by remember { mutableStateOf<String?>(null) }
     var staffOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
     var customerOrders by remember { mutableStateOf<List<Order>>(emptyList()) }
@@ -65,12 +65,27 @@ fun DashboardScreen(
         }
     }
 
+    suspend fun refreshNotifications() {
+        notifications = DashboardRepository.loadNotifications(userId)
+    }
+
     LaunchedEffect(isStaff) {
         refreshOrders()
-        notifications = DashboardRepository.loadNotifications()
+        refreshNotifications()
     }
 
     val unreadCount = notifications.count { !it.read }
+
+    fun toggleNotifications() {
+        val opening = !showNotifications
+        showNotifications = opening
+        if (opening && unreadCount > 0) {
+            coroutineScope.launch {
+                DashboardRepository.markNotificationsRead(userId)
+                refreshNotifications()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -95,7 +110,7 @@ fun DashboardScreen(
                 actions = {
                     // Notification bell
                     Box {
-                        IconButton(onClick = { showNotifications = !showNotifications }) {
+                        IconButton(onClick = { toggleNotifications() }) {
                             Icon(
                                 Icons.Outlined.Notifications,
                                 contentDescription = "Notifications",
@@ -141,8 +156,8 @@ fun DashboardScreen(
                 tonalElevation = 0.dp
             ) {
                 NavigationBarItem(
-                    selected = !isStaff || staffTab == "dashboard",
-                    onClick = { staffTab = "dashboard" },
+                    selected = activeTab == "dashboard",
+                    onClick = { activeTab = "dashboard" },
                     icon = { Icon(Icons.Filled.Dashboard, contentDescription = null) },
                     label = { Text("Dashboard", fontSize = 11.sp) },
                     colors = NavigationBarItemDefaults.colors(
@@ -154,8 +169,8 @@ fun DashboardScreen(
                     )
                 )
                 NavigationBarItem(
-                    selected = isStaff && staffTab == "orders",
-                    onClick = { if (isStaff) staffTab = "orders" },
+                    selected = activeTab == "orders",
+                    onClick = { activeTab = "orders" },
                     icon = { Icon(Icons.Outlined.Receipt, contentDescription = null) },
                     label = { Text(if (isStaff) "Orders" else "My Orders", fontSize = 11.sp) },
                     colors = NavigationBarItemDefaults.colors(
@@ -202,13 +217,14 @@ fun DashboardScreen(
                 StaffDashboardContent(
                     fullName = fullName,
                     orders = staffOrders,
-                    activeTab = staffTab,
+                    activeTab = activeTab,
                     onStatusUpdate = { orderId ->
                         coroutineScope.launch {
                             val result = DashboardRepository.advanceOrderStatus(orderId)
                             result.onSuccess {
                                 staffActionError = null
                                 refreshOrders()
+                                refreshNotifications()
                             }
                             result.onFailure { staffActionError = it.message }
                         }
@@ -226,7 +242,12 @@ fun DashboardScreen(
                     errorMessage = staffActionError
                 )
             } else {
-                CustomerDashboardContent(fullName = fullName, customerOrders = customerOrders)
+                CustomerDashboardContent(
+                    fullName = fullName,
+                    customerOrders = customerOrders,
+                    activeTab = activeTab,
+                    onNavigateToOrders = { activeTab = "orders" }
+                )
             }
 
             // Notification overlay
@@ -244,7 +265,10 @@ fun DashboardScreen(
                     onDismiss = { showNewOrderSheet = false },
                     onOrderCreated = {
                         showNewOrderSheet = false
-                        coroutineScope.launch { refreshOrders() }
+                        coroutineScope.launch {
+                            refreshOrders()
+                            refreshNotifications()
+                        }
                     }
                 )
             }
