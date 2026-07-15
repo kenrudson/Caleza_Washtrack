@@ -67,3 +67,29 @@ export function getTimeGreeting() {
   if (hour < 17) return "afternoon";
   return "evening";
 }
+
+// Converts a backend NotificationResponse into the shape the notification dropdown expects
+export function toDisplayNotification(n) {
+  return {
+    id: n.notedId,
+    text: n.message,
+    time: formatTimeAgo(n.sentAt),
+    read: n.isRead,
+  };
+}
+
+// Turns an ISO timestamp like "2026-07-12T14:30:00" into "2 hours ago", "3 days ago", etc.
+export function formatTimeAgo(isoString) {
+  if (!isoString) return "";
+  const then = new Date(isoString);
+  const seconds = Math.floor((Date.now() - then.getTime()) / 1000);
+
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return then.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}

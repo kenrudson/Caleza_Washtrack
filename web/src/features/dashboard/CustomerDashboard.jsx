@@ -138,7 +138,12 @@ export default function CustomerDashboard({
                 <span className="action-label">New Order</span>
                 <span className="action-desc">Create laundry order</span>
               </button>
-              <button className="quick-action-btn">
+              <button
+                className="quick-action-btn"
+                onClick={() =>
+                  document.getElementById("recent-orders")?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
+              >
                 <div className="action-icon" style={{ background: "var(--status-pending-bg)", color: "var(--status-pending)" }}>📋</div>
                 <span className="action-label">Order History</span>
                 <span className="action-desc">View past orders</span>
@@ -154,13 +159,12 @@ export default function CustomerDashboard({
       </div>
 
       {/* Recent Orders Table */}
-      <div className="section-card animate-fade-in" style={{ animationDelay: "0.35s", opacity: 0 }}>
+      <div id="recent-orders" className="section-card animate-fade-in" style={{ animationDelay: "0.35s", opacity: 0 }}>
         <div className="section-header">
           <div className="section-title">
             <span className="title-icon">📋</span>
-            Recent Orders
+            Order History
           </div>
-          <button className="btn-ghost">View All →</button>
         </div>
         <div className="section-body" style={{ padding: 0 }}>
           <table className="orders-table">

@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchCustomerOrders, fetchAllOrdersForStaff, advanceOrderStatus, markOrderAsPaid } from "./dashboardService";
+import {
+  fetchCustomerOrders,
+  fetchAllOrdersForStaff,
+  advanceOrderStatus,
+  markOrderAsPaid,
+  fetchMyNotifications,
+  markNotificationsRead,
+} from "./dashboardService";
 import BellIcon from "./components/BellIcon";
 import CustomerDashboard from "./CustomerDashboard";
 import StaffDashboard from "./StaffDashboard";
-import { MOCK_NOTIFICATIONS } from "./dashboardConstants";
-import { getInitials, toDisplayOrder, toStaffDisplayOrder } from "./dashboardHelpers";
+import { getInitials, toDisplayOrder, toStaffDisplayOrder, toDisplayNotification } from "./dashboardHelpers";
 import "./Dashboard.css";
 
 // ─── Main Dashboard Component ───────────────────────────────
@@ -15,6 +21,7 @@ export default function Dashboard() {
   const isStaff = user.role === "STAFF";
 
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   // Staff state — real data from the backend (FR-007)
   const [staffOrders, setStaffOrders] = useState([]);
@@ -50,18 +57,41 @@ export default function Dashboard() {
       .finally(() => setLoadingStaffOrders(false));
   };
 
+  // FR-010: real notifications — works identically for CUSTOMER and STAFF accounts
+  const loadNotifications = () => {
+    if (!user.userId) return;
+    fetchMyNotifications(user.userId)
+      .then((data) => setNotifications(data.map(toDisplayNotification)))
+      .catch(() => {
+        // Notifications are secondary to core functionality — fail silently
+        // rather than blocking the rest of the dashboard on an error banner.
+      });
+  };
+
   useEffect(() => {
     if (isStaff) {
       loadStaffOrders();
     } else {
       loadCustomerOrders();
     }
+    loadNotifications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.userId, isStaff]);
+
+  const handleToggleNotifications = () => {
+    const opening = !showNotifications;
+    setShowNotifications(opening);
+    if (opening && notifications.some((n) => !n.read)) {
+      markNotificationsRead(user.userId)
+        .then(() => loadNotifications())
+        .catch(() => {});
+    }
+  };
 
   const handleOrderCreated = (newOrderResponse) => {
     setCustomerOrders((prev) => [toDisplayOrder(newOrderResponse), ...prev]);
     setShowNewOrderModal(false);
+    loadNotifications();
   };
 
   const handleLogout = () => {
@@ -72,7 +102,10 @@ export default function Dashboard() {
   // FR-007: advance the order to its next status via the real backend, then refresh the queue
   const handleStatusUpdate = (orderId) => {
     advanceOrderStatus(orderId)
-      .then(() => loadStaffOrders())
+      .then(() => {
+        loadStaffOrders();
+        loadNotifications();
+      })
       .catch((err) =>
         setStaffFetchError(err.response?.data?.message || "Could not update that order's status. Please try again.")
       );
@@ -86,7 +119,7 @@ export default function Dashboard() {
       .catch(() => setStaffFetchError("Could not record that payment. Please try again."));
   };
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="dashboard-shell">
@@ -117,7 +150,7 @@ export default function Dashboard() {
             <div style={{ position: "relative" }}>
               <button
                 className="notification-btn"
-                onClick={() => setShowNotifications(!showNotifications)}
+                onClick={handleToggleNotifications}
                 title="Notifications"
               >
                 <BellIcon size={20} />
@@ -128,20 +161,30 @@ export default function Dashboard() {
                 <div className="notification-dropdown">
                   <div className="dropdown-header">
                     <h3>Notifications</h3>
-                    <button className="btn-ghost" style={{ fontSize: "0.75rem" }}>
+                    <button
+                      className="btn-ghost"
+                      style={{ fontSize: "0.75rem" }}
+                      onClick={() => markNotificationsRead(user.userId).then(() => loadNotifications())}
+                    >
                       Mark all read
                     </button>
                   </div>
                   <div className="dropdown-body">
-                    {MOCK_NOTIFICATIONS.map((n) => (
-                      <div className="notification-item" key={n.id}>
-                        <div className={`notif-dot ${n.read ? "read" : ""}`} />
-                        <div className="notif-content">
-                          <div className="notif-text">{n.text}</div>
-                          <div className="notif-time">{n.time}</div>
-                        </div>
+                    {notifications.length === 0 ? (
+                      <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                        No notifications yet.
                       </div>
-                    ))}
+                    ) : (
+                      notifications.map((n) => (
+                        <div className="notification-item" key={n.id}>
+                          <div className={`notif-dot ${n.read ? "read" : ""}`} />
+                          <div className="notif-content">
+                            <div className="notif-text">{n.text}</div>
+                            <div className="notif-time">{n.time}</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}

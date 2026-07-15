@@ -26,3 +26,14 @@ export async function markOrderAsPaid(orderId) {
   const response = await axiosClient.post(`/staff/orders/${orderId}/mark-paid`);
   return response.data;
 }
+
+// FR-010: real notifications, for both CUSTOMER and STAFF accounts
+export async function fetchMyNotifications(userId) {
+  const response = await axiosClient.get(`/notifications/my/${userId}`);
+  return response.data;
+}
+
+export async function markNotificationsRead(userId) {
+  const response = await axiosClient.post(`/notifications/my/${userId}/mark-read`);
+  return response.data;
+}
