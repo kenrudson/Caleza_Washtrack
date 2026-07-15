@@ -1,5 +1,6 @@
 package edu.cit.caleza.washtrack.features.staffordermanagement;
 
+import edu.cit.caleza.washtrack.shared.entity.Notification;
 import edu.cit.caleza.washtrack.shared.entity.Order;
 import edu.cit.caleza.washtrack.shared.entity.PickupRequest;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.List;
 public class StaffOrderService {
 
     private final StaffOrderRepository orderRepository;
+    private final StaffOrderNotificationRepository notificationRepository;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MMMM d, yyyy");
 
@@ -60,7 +62,27 @@ public class StaffOrderService {
         order.setStatus(nextStatus);
         Order saved = orderRepository.save(order);
 
+        // BR-005: a notification is automatically generated whenever staff changes an order's status.
+        Notification notification = Notification.builder()
+                .user(saved.getUser())
+                .order(saved)
+                .message("Your order ORD-" + (1000 + saved.getOrderId()) + " is now " + formatStatus(nextStatus) + ".")
+                .type("STATUS_CHANGED")
+                .isRead(false)
+                .build();
+        notificationRepository.save(notification);
+
         return toResponse(saved);
+    }
+
+    private String formatStatus(Order.OrderStatus status) {
+        return switch (status) {
+            case PENDING -> "Pending";
+            case PICKED_UP -> "Picked Up";
+            case PROCESSING -> "Processing";
+            case READY -> "Ready";
+            case DELIVERED -> "Delivered";
+        };
     }
 
     // Lightweight payment marking, reusing the existing Order.paid flag.

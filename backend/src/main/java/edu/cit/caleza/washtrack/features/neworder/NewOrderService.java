@@ -75,14 +75,27 @@ public class NewOrderService {
                 .build();
         Order savedOrder = orderRepository.save(order);
 
-        Notification notification = Notification.builder()
+        Notification customerNotification = Notification.builder()
                 .user(user)
                 .order(savedOrder)
                 .message("Your order ORD-" + (1000 + savedOrder.getOrderId()) + " has been placed and is pending pickup.")
                 .type("ORDER_CREATED")
                 .isRead(false)
                 .build();
-        notificationRepository.save(notification);
+        notificationRepository.save(customerNotification);
+
+        // Also notify every staff account so incoming orders are visible without
+        // needing to manually refresh the staff dashboard.
+        for (User staff : userRepository.findByRole(User.Role.STAFF)) {
+            Notification staffNotification = Notification.builder()
+                    .user(staff)
+                    .order(savedOrder)
+                    .message("New order ORD-" + (1000 + savedOrder.getOrderId()) + " placed by " + user.getFullName() + ".")
+                    .type("NEW_ORDER")
+                    .isRead(false)
+                    .build();
+            notificationRepository.save(staffNotification);
+        }
 
         return toResponse(savedOrder);
     }
