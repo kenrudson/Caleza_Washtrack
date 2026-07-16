@@ -41,7 +41,8 @@ fun CustomerDashboardContent(
     fullName: String,
     customerOrders: List<Order>,
     activeTab: String = "dashboard",
-    onNavigateToOrders: () -> Unit = {}
+    onNavigateToOrders: () -> Unit = {},
+    onOpenProfile: () -> Unit = {}
 ) {
     val activeOrders = customerOrders.filter { it.status != "Delivered" }
     val latestOrder = activeOrders.firstOrNull()
@@ -226,7 +227,8 @@ fun CustomerDashboardContent(
                             iconBg = StatusProcessingBg,
                             iconColor = StatusProcessing,
                             label = "My Profile",
-                            desc = "Update info"
+                            desc = "Update info",
+                            onClick = onOpenProfile
                         )
                     }
                 }

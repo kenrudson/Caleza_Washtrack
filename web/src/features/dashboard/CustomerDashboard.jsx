@@ -11,6 +11,7 @@ export default function CustomerDashboard({
   onOpenNewOrder,
   onCloseNewOrder,
   onOrderCreated,
+  onOpenProfile,
 }) {
   const activeOrders = orders.filter((o) => o.status !== "Delivered");
   const latestOrder = activeOrders[0];
@@ -140,26 +141,30 @@ export default function CustomerDashboard({
               </button>
               <button
                 className="quick-action-btn"
-                onClick={() =>
-                  document.getElementById("recent-orders")?.scrollIntoView({ behavior: "smooth", block: "start" })
-                }
+                onClick={() => {
+                  const el = document.getElementById("recent-orders");
+                  if (el) {
+                    if (el.style.display === "none") {
+                      el.style.display = "block";
+                      el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    } else {
+                      el.style.display = "none";
+                    }
+                  }
+                }}
               >
                 <div className="action-icon" style={{ background: "var(--status-pending-bg)", color: "var(--status-pending)" }}>📋</div>
                 <span className="action-label">Order History</span>
-                <span className="action-desc">View past orders</span>
+                <span className="action-desc">Toggle past orders</span>
               </button>
-              <button className="quick-action-btn">
-                <div className="action-icon" style={{ background: "var(--status-processing-bg)", color: "var(--status-processing)" }}>👤</div>
-                <span className="action-label">My Profile</span>
-                <span className="action-desc">Update your info</span>
-              </button>
+              
             </div>
           </div>
         </div>
       </div>
 
       {/* Recent Orders Table */}
-      <div id="recent-orders" className="section-card animate-fade-in" style={{ animationDelay: "0.35s", opacity: 0 }}>
+      <div id="recent-orders" className="section-card animate-fade-in" style={{ animationDelay: "0.35s", display: "none" }}>
         <div className="section-header">
           <div className="section-title">
             <span className="title-icon">📋</span>

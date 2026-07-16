@@ -2,7 +2,7 @@ import { SERVICE_ICONS, STATUS_CLASS } from "./dashboardConstants";
 import { getNextStatus, getTimeGreeting } from "./dashboardHelpers";
 
 // ─── Staff Dashboard ────────────────────────────────────────
-export default function StaffDashboard({ user, orders, loadingOrders, fetchError, onStatusUpdate, onRecordPayment }) {
+export default function StaffDashboard({ user, orders, loadingOrders, fetchError, onStatusUpdate, onRecordPayment, onOpenProfile }) {
   const pendingCount = orders.filter((o) => o.status === "Pending").length;
   const processingCount = orders.filter((o) => ["Picked Up", "Processing"].includes(o.status)).length;
   const readyCount = orders.filter((o) => o.status === "Ready").length;
@@ -14,10 +14,15 @@ export default function StaffDashboard({ user, orders, loadingOrders, fetchError
     <>
       {/* Welcome Banner */}
       <div className="welcome-banner animate-fade-in">
-        <h1>Good {getTimeGreeting()}, {user.fullName?.split(" ")[0] || "Staff"}! 💼</h1>
-        <p>
-          You have {pendingCount} pending order{pendingCount !== 1 ? "s" : ""} and {unpaidCount} unpaid order{unpaidCount !== 1 ? "s" : ""} awaiting action.
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
+          <div>
+            <h1>Good {getTimeGreeting()}, {user.fullName?.split(" ")[0] || "Staff"}! 💼</h1>
+            <p>
+              You have {pendingCount} pending order{pendingCount !== 1 ? "s" : ""} and {unpaidCount} unpaid order{unpaidCount !== 1 ? "s" : ""} awaiting action.
+            </p>
+          </div>
+          
+        </div>
       </div>
 
       {/* Stat Cards */}

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.*
 import com.example.myapplication.utils.SessionManager
+import com.example.myapplication.feature.profile.ProfileSheet
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -42,11 +43,12 @@ fun DashboardScreen(
     sessionManager: SessionManager,
     onLogout: () -> Unit
 ) {
-    val fullName = sessionManager.getFullName() ?: "User"
+    var profileFullName by remember { mutableStateOf(sessionManager.getFullName() ?: "User") }
     val role = sessionManager.getRole() ?: "CUSTOMER"
     val isStaff = role == "STAFF"
     val userId = sessionManager.getUserId()
 
+    var showProfileSheet by remember { mutableStateOf(false) }
     var showNotifications by remember { mutableStateOf(false) }
     var showNewOrderSheet by remember { mutableStateOf(false) }
     var activeTab by remember { mutableStateOf("dashboard") } // "dashboard" | "orders" (both roles)
@@ -197,8 +199,8 @@ fun DashboardScreen(
                     )
                 }
                 NavigationBarItem(
-                    selected = false,
-                    onClick = { },
+                    selected = showProfileSheet,
+                    onClick = { showProfileSheet = true },
                     icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                     label = { Text("Profile", fontSize = 11.sp) },
                     colors = NavigationBarItemDefaults.colors(
@@ -215,7 +217,7 @@ fun DashboardScreen(
         Box(modifier = Modifier.padding(innerPadding)) {
             if (isStaff) {
                 StaffDashboardContent(
-                    fullName = fullName,
+                    fullName = profileFullName,
                     orders = staffOrders,
                     activeTab = activeTab,
                     onStatusUpdate = { orderId ->
@@ -243,10 +245,11 @@ fun DashboardScreen(
                 )
             } else {
                 CustomerDashboardContent(
-                    fullName = fullName,
+                    fullName = profileFullName,
                     customerOrders = customerOrders,
                     activeTab = activeTab,
-                    onNavigateToOrders = { activeTab = "orders" }
+                    onNavigateToOrders = { activeTab = "orders" },
+                    onOpenProfile = { showProfileSheet = true }
                 )
             }
 
@@ -269,6 +272,17 @@ fun DashboardScreen(
                             refreshOrders()
                             refreshNotifications()
                         }
+                    }
+                )
+            }
+
+            // Profile Sheet (FR-003)
+            if (showProfileSheet) {
+                ProfileSheet(
+                    sessionManager = sessionManager,
+                    onDismiss = { showProfileSheet = false },
+                    onProfileUpdated = { newName ->
+                        profileFullName = newName
                     }
                 )
             }

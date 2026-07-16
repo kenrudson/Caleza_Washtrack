@@ -11,15 +11,17 @@ import {
 import BellIcon from "./components/BellIcon";
 import CustomerDashboard from "./CustomerDashboard";
 import StaffDashboard from "./StaffDashboard";
+import ProfileModal from "../profile/ProfileModal";
 import { getInitials, toDisplayOrder, toStaffDisplayOrder, toDisplayNotification } from "./dashboardHelpers";
 import "./Dashboard.css";
 
 // ─── Main Dashboard Component ───────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
   const isStaff = user.role === "STAFF";
 
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
@@ -94,6 +96,12 @@ export default function Dashboard() {
     loadNotifications();
   };
 
+  const handleProfileSaved = (updatedProfile) => {
+    const refreshed = { ...user, fullName: updatedProfile.fullName };
+    setUser(refreshed);
+    localStorage.setItem("user", JSON.stringify(refreshed));
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     navigate("/login");
@@ -123,6 +131,15 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-shell">
+      {/* ── Profile Modal ─────────────────────────── */}
+      {showProfileModal && (
+        <ProfileModal
+          userId={user.userId}
+          onClose={() => setShowProfileModal(false)}
+          onProfileSaved={handleProfileSaved}
+        />
+      )}
+
       {/* ── Main Content ──────────────────────────── */}
       <main className="main-content">
         {/* Top Header */}
@@ -134,19 +151,20 @@ export default function Dashboard() {
                 <div className="page-title">
                   {isStaff ? "Staff Dashboard" : "My Dashboard"}
                 </div>
-                <div className="page-subtitle">
-                  {new Date().toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </div>
+               
               </div>
             </div>
           </div>
 
           <div className="header-right">
+            <button
+              className="profile-icon-btn"
+              onClick={() => setShowProfileModal(true)}
+              title="My Profile"
+            >
+              👤 Profile
+            </button>
+
             <div style={{ position: "relative" }}>
               <button
                 className="notification-btn"
@@ -190,7 +208,12 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="header-user">
+            <div
+              className="header-user"
+              style={{ cursor: "pointer" }}
+              onClick={() => setShowProfileModal(true)}
+              title="Edit profile"
+            >
               <div className="user-avatar">{getInitials(user.fullName || "User")}</div>
               <div className="user-info">
                 <span className="user-name">{user.fullName || "User"}</span>
@@ -214,6 +237,7 @@ export default function Dashboard() {
               fetchError={staffFetchError}
               onStatusUpdate={handleStatusUpdate}
               onRecordPayment={handleRecordPayment}
+              onOpenProfile={() => setShowProfileModal(true)}
             />
           ) : (
             <CustomerDashboard
@@ -225,6 +249,7 @@ export default function Dashboard() {
               onOpenNewOrder={() => setShowNewOrderModal(true)}
               onCloseNewOrder={() => setShowNewOrderModal(false)}
               onOrderCreated={handleOrderCreated}
+              onOpenProfile={() => setShowProfileModal(true)}
             />
           )}
         </div>
