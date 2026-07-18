@@ -29,4 +29,3 @@ public class SecurityConfig {
         return http.build();
     }
 }
-// $env:SUPABASE_DB_PASSWORD="your-actual-password"//
