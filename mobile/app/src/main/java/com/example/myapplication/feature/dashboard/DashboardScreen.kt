@@ -247,9 +247,7 @@ fun DashboardScreen(
                 CustomerDashboardContent(
                     fullName = profileFullName,
                     customerOrders = customerOrders,
-                    activeTab = activeTab,
-                    onNavigateToOrders = { activeTab = "orders" },
-                    onOpenProfile = { showProfileSheet = true }
+                    activeTab = activeTab
                 )
             }
 
@@ -289,4 +287,3 @@ fun DashboardScreen(
         }
     }
 }
-
