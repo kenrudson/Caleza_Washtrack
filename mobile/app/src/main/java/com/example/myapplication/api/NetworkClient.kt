@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 object NetworkClient {
     // 10.0.2.2 is the special IP address that routes to localhost on the development machine from the Android emulator.
     // If testing on a physical device, replace this with your machine's local IP address (e.g., 192.168.x.x).
-    private const val BASE_URL = "https://caleza-washtrack.onrender.com"
+    private const val BASE_URL = "https://caleza-washtrack.onrender.com/api/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
